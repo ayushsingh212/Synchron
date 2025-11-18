@@ -1,38 +1,75 @@
-import { useState, createContext, useContext } from "react";
+import { useState, createContext, useContext, useCallback } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 
-export const OrganisationContext = createContext();
 
-export const OrganisationProvider = ({ children }) => {
-  const [organisation, setOrganisation] = useState(null);
 
-  const getOrganisation = async () => {
+export interface OrganisationType {
+  _id?: string;
+  name?: string;
+  email?: string;
+  type?: string;
+  avatar?: string;
+  contactNumber?: string;
+  [key: string]: any;   
+}
+
+export interface OrganisationContextType {
+  organisation: OrganisationType | null;
+  setOrganisation: (org: OrganisationType | null) => void;
+  getOrganisation: () => Promise<OrganisationType | null>;
+}
+
+
+
+export const OrganisationContext = createContext<OrganisationContextType | undefined>(
+  undefined
+);
+
+
+
+export const OrganisationProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [organisation, setOrganisation] = useState<OrganisationType | null>(null);
+
+  const getOrganisation = useCallback(async (): Promise<OrganisationType | null> => {
     try {
-      const res = await axios.get(
-        `${API_BASE_URL}/organisation/getCurrentOrganisation`,
-        {
-          withCredentials: true,
-        }
-      );
-      console.log("Context is ww");
+      const res = await axios.get(`${API_BASE_URL}/organisation/getCurrentOrganisation`, {
+        withCredentials: true,
+      });
 
-      console.log("I am the data", res.data);
-      return res.data.data;
+      const data = res.data?.data || null;
+      setOrganisation(data);  
+
+      return data;
     } catch (error) {
       console.error("Error fetching organisation:", error);
+      return null;
     }
-  };
+  }, []);
 
   return (
     <OrganisationContext.Provider
-      value={{ organisation, setOrganisation, getOrganisation }}
+      value={{
+        organisation,
+        setOrganisation,
+        getOrganisation,
+      }}
     >
       {children}
     </OrganisationContext.Provider>
   );
 };
 
-export const useOrganisation = ()=>{
-  return useContext(OrganisationContext)
-}
+
+
+export const useOrganisation = (): OrganisationContextType => {
+  const ctx = useContext(OrganisationContext);
+
+  if (!ctx) {
+    throw new Error("useOrganisation must be used inside <OrganisationProvider>");
+  }
+
+  return ctx;
+};

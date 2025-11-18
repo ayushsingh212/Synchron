@@ -7,43 +7,66 @@ const DashboardLayout: React.FC = () => {
   const { organisation, logout } = useOrganisation();
   const { sidebarOpen, setSidebarOpen } = useAppState();
 
+  const linkClasses = ({ isActive }: { isActive: boolean }) =>
+    isActive
+      ? "text-blue-600 font-semibold bg-blue-50 rounded-lg px-3 py-2"
+      : "text-slate-700 hover:bg-slate-100 rounded-lg px-3 py-2";
+
   return (
-    <div className="min-h-[80vh] flex">
-      {/* Sidebar */}
-      <aside className={`bg-white border-r p-4 w-64 ${sidebarOpen ? "" : "hidden md:block"}`}>
-        <div className="mb-6">
-          <div className="font-semibold">Dashboard</div>
-          <div className="text-sm text-slate-600">{organisation?.name}</div>
+    <div className="flex min-h-screen bg-slate-50">
+      <aside
+        className={`bg-white border-r shadow-sm w-64 p-5 flex flex-col gap-6 fixed inset-y-0 left-0 z-40 transform transition-transform md:static md:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div>
+          <div className="text-lg font-bold text-blue-600">Dashboard</div>
+          <div className="text-sm text-slate-500">
+            {organisation?.name || "Institution"}
+          </div>
         </div>
 
-        <nav className="flex flex-col gap-2">
-          <NavLink to="organisation-info" className={({ isActive }) => isActive ? "font-medium text-brand-500" : "text-slate-700"}>
-            Organisation Info
+        <nav className="flex flex-col gap-1 text-sm font-medium">
+          <NavLink to="organisation-info" className={linkClasses}>
+            Institution Overview
           </NavLink>
-          <NavLink to="organisation-data-taker" className={({ isActive }) => isActive ? "font-medium text-brand-500" : "text-slate-700"}>
-            Data Input
+
+          <NavLink to="organisation-data-course" className={linkClasses}>
+            Academic Data Manager
           </NavLink>
-          <NavLink to="upload-pdf" className={({ isActive }) => isActive ? "font-medium text-brand-500" : "text-slate-700"}>
-            Upload PDF (Utilities)
+
+          <NavLink to="upload-pdf" className={linkClasses}>
+            PDF Utilities
           </NavLink>
-          <NavLink to="timetables" className={({ isActive }) => isActive ? "font-medium text-brand-500" : "text-slate-700"}>
-            Manage Timetables
+
+          <NavLink to="timetables" className={linkClasses}>
+            Timetable Manager
           </NavLink>
         </nav>
 
-        <div className="mt-6">
-          <button onClick={() => logout()} className="text-sm text-red-600">Logout</button>
-        </div>
+        <button
+          onClick={logout}
+          className="text-red-600 text-sm mt-auto hover:bg-red-50 px-3 py-2 rounded-lg"
+        >
+          Logout
+        </button>
       </aside>
 
-      {/* Main content */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 md:ml-64 p-6">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden px-2 py-1 border rounded">Menu</button>
-          <h2 className="text-xl font-semibold">Organisation Dashboard</h2>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden px-3 py-2 border border-slate-300 rounded-lg text-sm"
+          >
+            Menu
+          </button>
+
+          <h2 className="text-2xl font-semibold text-blue-600">
+            Institution Dashboard
+          </h2>
         </div>
 
-        <div className="bg-muted p-4">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
           <Outlet />
         </div>
       </div>

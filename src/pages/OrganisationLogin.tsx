@@ -18,14 +18,14 @@ const OrganisationLogin = () => {
 
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
+  const handleChange = (e: any) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleRequestOtp = async () => {
     try {
       if (!formData.organisationEmail) {
-        toast.error("Please enter your email");
+        toast.error("Please enter your organisation email");
         return;
       }
       setLoading(true);
@@ -36,20 +36,20 @@ const OrganisationLogin = () => {
         { withCredentials: true }
       );
 
-      toast.success("OTP has been sent!");
-    } catch (err) {
+      toast.success("OTP sent successfully!");
+    } catch (err: any) {
       toast.error(err.response?.data?.message || "Error sending OTP");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     try {
       setLoading(true);
 
-      const res = await axios.post(
+      await axios.post(
         `${API_BASE_URL}/organisation/login`,
         formData,
         { withCredentials: true }
@@ -57,7 +57,7 @@ const OrganisationLogin = () => {
 
       toast.success("Login successful");
       navigate("/dashboard/organisation-info");
-    } catch (err) {
+    } catch (err: any) {
       toast.error(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
@@ -65,34 +65,33 @@ const OrganisationLogin = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 px-4">
-      <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md backdrop-blur-xl border border-slate-200">
-        
+    <div className="flex justify-center items-center min-h-screen bg-blue-600 px-4 py-10">
+      <div className="bg-white shadow-2xl rounded-3xl p-10 w-full max-w-md border border-blue-100">
+
         {/* Title */}
-        <h2 className="text-3xl font-bold text-center text-blue-700 drop-shadow-sm">
+        <h2 className="text-3xl font-bold text-center text-blue-600 mb-8">
           Organisation Login
         </h2>
 
         {/* Toggle Buttons */}
-        <div className="flex mt-6 bg-slate-100 rounded-xl overflow-hidden p-1">
+        <div className="flex bg-blue-50 rounded-xl p-1 mb-8 border border-blue-200">
           <button
             onClick={() => setLoginMethod("password")}
-            className={`flex-1 py-2 rounded-lg transition-all text-sm font-semibold
-              ${
-                loginMethod === "password"
-                  ? "bg-blue-600 text-white shadow"
-                  : "text-slate-600"
+            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition 
+              ${loginMethod === "password"
+                ? "bg-blue-600 text-white shadow"
+                : "text-blue-600 hover:bg-blue-100"
               }`}
           >
             Password Login
           </button>
+
           <button
             onClick={() => setLoginMethod("otp")}
-            className={`flex-1 py-2 rounded-lg transition-all text-sm font-semibold
-              ${
-                loginMethod === "otp"
-                  ? "bg-blue-600 text-white shadow"
-                  : "text-slate-600"
+            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition 
+              ${loginMethod === "otp"
+                ? "bg-blue-600 text-white shadow"
+                : "text-blue-600 hover:bg-blue-100"
               }`}
           >
             OTP Login
@@ -100,69 +99,69 @@ const OrganisationLogin = () => {
         </div>
 
         {/* Form */}
-        <form className="space-y-5 mt-8" onSubmit={handleSubmit}>
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {loginMethod === "password" ? (
             <>
-              {/* Email or Contact */}
+              {/* Email / Phone */}
               <div className="relative">
+                <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
                 <input
                   type="text"
                   name="organisationEmailOrorganisationContactNumber"
                   value={formData.organisationEmailOrorganisationContactNumber}
                   onChange={handleChange}
                   placeholder="Email or Contact Number"
-                  className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-400 outline-none"
+                  className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
-                <Mail className="absolute left-4 top-3.5 text-slate-500 h-5" />
               </div>
 
               {/* Password */}
               <div className="relative">
+                <Lock className="absolute left-4 top-3.5 text-blue-600 h-5" />
                 <input
                   type="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Password"
-                  className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-400 outline-none"
+                  className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
-                <Lock className="absolute left-4 top-3.5 text-slate-500 h-5" />
               </div>
             </>
           ) : (
             <>
               {/* Email */}
               <div className="relative">
+                <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
                 <input
                   type="email"
                   name="organisationEmail"
                   value={formData.organisationEmail}
                   onChange={handleChange}
                   placeholder="Organisation Email"
-                  className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-400 outline-none"
+                  className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
-                <Mail className="absolute left-4 top-3.5 text-slate-500 h-5" />
               </div>
 
               {/* OTP */}
               <div className="flex gap-2">
                 <div className="relative flex-1">
+                  <Hash className="absolute left-4 top-3.5 text-blue-600 h-5" />
                   <input
                     type="text"
                     name="otp"
                     value={formData.otp}
                     onChange={handleChange}
                     placeholder="Enter OTP"
-                    className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-400 outline-none"
+                    className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none"
                   />
-                  <Hash className="absolute left-4 top-3.5 text-slate-500 h-5" />
                 </div>
 
                 <button
                   type="button"
                   onClick={handleRequestOtp}
                   disabled={loading}
-                  className="px-4 py-3 rounded-xl bg-yellow-500 text-white text-sm font-semibold hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? "Sending..." : "Get OTP"}
                 </button>
@@ -170,7 +169,7 @@ const OrganisationLogin = () => {
             </>
           )}
 
-          {/* Login Button */}
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
@@ -185,9 +184,9 @@ const OrganisationLogin = () => {
         </form>
 
         {/* Register Link */}
-        <p className="text-center mt-6 text-slate-600 text-sm">
+        <p className="text-center mt-6 text-blue-600 text-sm">
           Don’t have an account?{" "}
-          <a href="/register" className="text-blue-600 font-medium hover:underline">
+          <a href="/register" className="font-medium hover:underline">
             Register
           </a>
         </p>

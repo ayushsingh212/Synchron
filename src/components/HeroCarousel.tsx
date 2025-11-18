@@ -13,17 +13,17 @@ const slides = [
     title: "The Smarter Way To Create Timetables",
     subtitle:
       "Automated, AI-powered, conflict-free timetabling for universities and colleges.",
-    image: "/images/hero1.jpg",
+    image: "./img1.jpg",
   },
   {
     title: "Optimise Rooms, Staff & Periods",
     subtitle: "Make the best use of resources and reduce clashes instantly.",
-    image: "/images/hero2.jpg",
+    image: "./img2.jpg",
   },
   {
     title: "Collaborate With Faculty & Students",
     subtitle: "Share timetables, changes and announcements in real time.",
-    image: "/images/hero3.jpg",
+    image: "./img3.jpg",
   },
 ];
 
@@ -43,7 +43,7 @@ const HeroCarousel: React.FC = () => {
             <div
               className="h-[66vh] w-full bg-center bg-cover flex items-center"
               style={{
-                backgroundImage: `linear-gradient(rgba(37,99,235,0.85), rgba(37,99,235,0.85)), url('${s.image}')`,
+                backgroundImage: ` url('${s.image}')`,
               }}
               role="img"
               aria-label={s.title}
@@ -51,25 +51,25 @@ const HeroCarousel: React.FC = () => {
               <div className="max-w-6xl mx-auto px-6 text-center">
                 <div className="text-6xl mb-4">🚀</div>
 
-                <h1 className="text-4xl md:text-5xl font-extrabold leading-tight text-white">
+                <h1 className="text-4xl md:text-5xl font-extrabold leading-tight text-blue-600">
                   {s.title}
                 </h1>
 
-                <p className="mt-4 max-w-2xl mx-auto text-lg text-blue-100">
+                <p className="mt-4 max-w-2xl mx-auto text-lg text-blue-500">
                   {s.subtitle}
                 </p>
 
                 <div className="mt-8 flex items-center justify-center gap-4">
                   <Link
                     to="/register"
-                    className="bg-white text-blue-600 font-semibold px-6 py-3 rounded-full shadow hover:bg-gray-50 transition"
+                    className="bg-green-600 text-white font-semibold px-6 py-3 rounded-full shadow hover:bg-green-900 transition"
                   >
                     Get Started
                   </Link>
 
                   <Link
                     to="/about"
-                    className="px-6 py-3 border border-white/30 rounded-full text-white hover:bg-white/10 transition"
+                    className="px-6 py-3 border bg-blue-600 border-white/30 rounded-full text-white hover:bg-blue-950 transition"
                   >
                     Learn More
                   </Link>
