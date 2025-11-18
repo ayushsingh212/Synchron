@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useOrganisation } from "../../context/organisationContext";
+import { useOrganisation } from "../../context/OrganisationContext";
 
 const OrganisationInfo: React.FC = () => {
   const { organisation, setOrganisation } = useOrganisation();
