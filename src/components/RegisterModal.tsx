@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 import Modal from "./Modal";
-import { Building2, Mail, Lock, Phone, Image as ImageIcon } from "lucide-react";
+import { Building2, Mail, Lock, Phone, Image as ImageIcon, Landmark } from "lucide-react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { toast } from "react-toastify";
 
@@ -19,6 +19,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
     organisationName: "",
     organisationEmail: "",
     organisationContactNumber: "",
+    organisationType: "",
     password: "",
     avatar: null as File | null
   });
@@ -32,7 +33,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
         digits = digits.slice(0, 10);
         toast.error("Contact number cannot exceed 10 digits");
       }
-      setForm({ ...form, [name]: digits });
+      setForm({ ...form, organisationContactNumber: digits });
       return;
     }
 
@@ -52,7 +53,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
       const fd = new FormData();
       Object.entries(form).forEach(([key, val]) => fd.append(key, val as any));
 
-      const res = await axios.post(`${API_BASE_URL}/organisation/register`, fd, {
+      await axios.post(`${API_BASE_URL}/organisation/register`, fd, {
         withCredentials: true
       });
 
@@ -82,6 +83,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
     form.organisationEmail.includes("@") &&
     form.organisationContactNumber.length === 10 &&
     form.password.length >= 8 &&
+    form.organisationType &&
     form.avatar;
 
   return (
@@ -100,6 +102,21 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
             placeholder="Organisation Name"
             className="w-full pl-10 py-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-100"
           />
+        </div>
+
+        <div className="relative">
+          <Landmark className="absolute left-3 top-3 text-blue-500 h-5" />
+          <select
+            name="organisationType"
+            value={form.organisationType}
+            onChange={handleChange}
+            className="w-full pl-10 py-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-100 bg-white"
+          >
+            <option value="">Select Organisation Type</option>
+            <option value="school">School</option>
+            <option value="college">College</option>
+            <option value="university">University</option>
+          </select>
         </div>
 
         <div className="relative">
@@ -145,9 +162,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
         </div>
 
         <div className="relative">
-          <div className="absolute left-3 top-3 text-blue-500">
-            <ImageIcon size={18} />
-          </div>
+          <ImageIcon className="absolute left-3 top-3 text-blue-500" size={18} />
           <input
             name="avatar"
             type="file"

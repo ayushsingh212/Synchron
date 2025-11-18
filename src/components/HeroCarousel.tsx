@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -7,6 +7,8 @@ import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 const slides = [
   {
@@ -28,6 +30,25 @@ const slides = [
 ];
 
 const HeroCarousel: React.FC = () => {
+    const [logined, setLogined] = useState(false);
+  
+    const checkUserLoggedIn = async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/organisation/getCurrentOrganisation`,
+        { withCredentials: true }
+      );
+      console.log("User logged in:", res.data);
+      setLogined(true);
+    } catch (error) {
+      console.log("User not logged in:", error);
+      setLogined(false);
+    }
+  };
+
+  useEffect(() => {
+    checkUserLoggedIn();
+  }, []);
   return (
     <section className="relative">
       <Swiper
@@ -60,12 +81,23 @@ const HeroCarousel: React.FC = () => {
                 </p>
 
                 <div className="mt-8 flex items-center justify-center gap-4">
-                  <Link
-                    to="/register"
-                    className="bg-green-600 text-white font-semibold px-6 py-3 rounded-full shadow hover:bg-green-900 transition"
-                  >
-                    Get Started
-                  </Link>
+                    {logined ? (
+                             <Link
+                               to="/dashboard/organisation-info"
+                              className="bg-green-600 text-white font-semibold px-6 py-3 rounded-full shadow hover:bg-green-900 transition"
+                             >
+                               Go to Dashboard
+                             </Link>
+                           ) : (
+                            <button
+                               onClick={() => {
+                                 window.dispatchEvent(new CustomEvent("open-login-modal"));
+                               }}
+                              className="bg-green-600 text-white font-semibold px-6 py-3 rounded-full shadow hover:bg-green-900 transition"
+                             >
+                               Get Started
+                             </button>
+                           )}
 
                   <Link
                     to="/about"

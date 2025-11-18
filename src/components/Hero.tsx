@@ -44,17 +44,19 @@ const Hero: React.FC = () => {
           {logined ? (
             <Link
               to="/dashboard/organisation-info"
-              className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-full shadow hover:bg-slate-100 transition"
+             className="bg-green-600 text-white font-semibold px-6 py-3 rounded-full shadow hover:bg-green-900 transition"
             >
               Go to Dashboard
             </Link>
           ) : (
-            <Link
-              to="/login"
-              className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-full shadow hover:bg-slate-100 transition"
+           <button
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("open-login-modal"));
+              }}
+             className="bg-green-600 text-white font-semibold px-6 py-3 rounded-full shadow hover:bg-green-900 transition"
             >
               Get Started
-            </Link>
+            </button>
           )}
         </div>
 

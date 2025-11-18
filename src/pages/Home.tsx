@@ -5,7 +5,7 @@ import Services from "../components/Services";
 import FeaturesIcons from "../components/FeaturesIcons";
 import Testimonials from "../components/Testimonnials";
 import LogosCloud from "../components/LogosCloud";
-import Footer from "../components/Footer";
+
 
 const Home: React.FC = () => {
   return (
