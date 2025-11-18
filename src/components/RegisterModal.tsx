@@ -5,6 +5,7 @@ import Modal from "./Modal";
 import { Building2, Mail, Lock, Phone, Image as ImageIcon, Landmark } from "lucide-react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   open: boolean;
@@ -14,7 +15,7 @@ interface Props {
 const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     organisationName: "",
     organisationEmail: "",
@@ -65,7 +66,8 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
         { withCredentials: true }
       );
 
-      window.location.href = `/verify-Email/${form.organisationEmail}`;
+     
+      navigate(`/verify-Email/${form.organisationEmail}`)
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Registration failed");
     } finally {

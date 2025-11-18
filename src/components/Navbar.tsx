@@ -39,8 +39,7 @@ const Navbar: React.FC = () => {
           </h1>
 
           <nav className="flex items-center gap-6 text-sm md:text-base font-semibold">
-            <a href="/about" className="hover:text-blue-500 transition">About</a>
-            <a href="/contact" className="hover:text-blue-500 transition">Contact</a>
+            
 
             <button
               onClick={() => setShowLogin(true)}

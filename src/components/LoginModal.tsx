@@ -4,6 +4,7 @@ import { API_BASE_URL } from "../config";
 import { toast } from "react-toastify";
 import { Mail, Lock, Hash, X } from "lucide-react";
 import Modal from "./Modal";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   open: boolean;
@@ -12,6 +13,7 @@ interface Props {
 
 const LoginModal: React.FC<Props> = ({ open, onClose }) => {
   const [loginMethod, setLoginMethod] = useState("password");
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -52,7 +54,8 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
         withCredentials: true,
       });
       toast.success("Login successful");
-      window.location.href = "/dashboard/organisation-info";
+      // window.location.href = "/dashboard/organisation-info";
+      navigate("/dashboard/")
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Login failed");
     } finally {
