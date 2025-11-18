@@ -1,46 +1,468 @@
-import React, { useState } from "react";
 
-/**
- * Upload PDF utility - uploads file and calls backend OCR/Extractor.
- * For production: use chunked uploads, handle CORS, and secure endpoints.
- */
+import React, { useState, useRef } from "react";
+import axios from "axios";
+import {
+  Loader2,
+  UploadCloud,
+  Check,
+  FileText,
+  XCircle,
+  Copy,
+  Download,
+  ArrowRightCircle,
+} from "lucide-react";
+import { API_BASE_URL, MODEL_BASE_URL, useAppState } from "../../config";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
-const UploadPdf: React.FC = () => {
-  const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<null | "idle" | "uploading" | "done" | "error">(null);
+const UploadPdf = () => {
+    const {courseId,year} = useParams()
+  const navigate = useNavigate();
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [result, setResult] = useState(null);
+  const [done, setDone] = useState(false);
+  const [isDragging, setIsDragging] = useState(false); // drag hover state
+  const { hasOrganisationData, setHasOrganisationData } = useAppState()
+  const fileInputRef = useRef();
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] ?? null;
-    setFile(f);
+  // handle file selection
+  const handleFileChange = (e) => {
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+    if (picked.type !== "application/pdf") {
+      toast.error("Please upload a PDF file only.");
+      return;
+    }
+    setFile(picked);
+    setResult(null);
+    setDone(false);
   };
 
-  const upload = async () => {
-    if (!file) return;
-    setStatus("uploading");
+  // handle drag events
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const picked = e.dataTransfer.files?.[0];
+    if (!picked) return;
+    if (picked.type !== "application/pdf") {
+      toast.error("Please upload a PDF file only.");
+      return;
+    }
+    setFile(picked);
+    setResult(null);
+    setDone(false);
+  };
+
+  // handle upload
+  const handleUpload = async (e) => {
+    e && e.preventDefault();
+    if (!file) {
+      toast.warn("Please select a PDF file first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
     try {
-      // TODO: create FormData, send to extraction endpoint
-      await new Promise((r) => setTimeout(r, 1000));
-      setStatus("done");
-    } catch {
-      setStatus("error");
+      setUploading(true);
+      setResult(null);
+      setDone(false);
+
+      const res = await axios.post(
+        `${MODEL_BASE_URL}/parse-timetable`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+          timeout: 120000,
+        }
+      );
+
+      const parsed = res?.data?.data;
+      if (!parsed) {
+        toast.error(
+          "Parsing returned no data. Please check the PDF or try again."
+        );
+        return;
+      }
+
+      setResult(parsed);
+      setDone(true);
+      toast.success("PDF parsed successfully — please verify the data below.");
+      console.log("Parsed result:", parsed);
+    } catch (error) {
+      console.error("Upload/parse error:", error);
+      toast.error("Failed to parse PDF. Try again or upload a different file.");
+    } finally {
+      setUploading(false);
     }
   };
 
-  return (
-    <section className="max-w-xl">
-      <h3 className="font-semibold mb-3">Upload PDF for extraction</h3>
-      <input type="file" accept="application/pdf" onChange={handleFile} />
-      <div className="mt-3 flex gap-2">
-        <button onClick={upload} disabled={!file || status === "uploading"} className="bg-brand-500 text-white px-3 py-1 rounded disabled:opacity-50">Upload & Extract</button>
-        <button onClick={() => setFile(null)} className="px-3 py-1 border rounded">Clear</button>
-      </div>
+  // save parsed JSON
+  const handleSave = async (e) => {
+    e && e.preventDefault();
+    if (!result) {
+      toast.error("No parsed result to save. Upload a PDF first.");
+      return;
+    }
 
-      <div className="mt-4">
-        {status === "uploading" && <div>Uploading…</div>}
-        {status === "done" && <div className="text-green-600">Extraction finished. Check Data Input → Generate.</div>}
-        {status === "error" && <div className="text-red-600">Error while extracting PDF.</div>}
+    try {
+      setSaving(true);
+
+      if (!result.college_info && !result.time_slots) {
+        toast.warn(
+          "Parsed data looks suspicious — check the preview before saving."
+        );
+      }
+
+      const res = await axios.post(
+        `${API_BASE_URL}/timetable/saveData?course=${courseId}&year=${year}`,
+        result,
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+          timeout: 60000,
+        }
+      );
+      setHasOrganisationData(true)
+      toast.success("Saved to database successfully!");
+
+      setTimeout(() => {
+        navigate(`/dashboard/organisation-data-taker/${courseId}/${year}/data`);
+      }, 900);
+    } catch (error) {
+      console.error("Saving error:", error);
+      toast.error("Saving to database failed. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // copy JSON to clipboard
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(result, null, 2));
+      toast.success("Copied JSON to clipboard");
+    } catch (err) {
+      toast.error("Copy failed");
+    }
+  };
+
+  // download JSON
+  const handleDownload = () => {
+    const blob = new Blob([JSON.stringify(result, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${file?.name?.replace(/\.pdf$/i, "") || "timetable"}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // reset everything
+  const handleReset = () => {
+    setFile(null);
+    setResult(null);
+    setDone(false);
+    fileInputRef.current && (fileInputRef.current.value = "");
+  };
+
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="bg-white shadow-2xl rounded-2xl w-full max-w-3xl p-8 border border-gray-200">
+           <div className="bg-blue-600 text-white p-4 rounded-b-xl shadow mb-6">
+        <h2 className="text-xl font-semibold">
+          Academic Data for Course: <span className="text-yellow-300">{courseId || "N/A"}</span>
+        </h2>
+        <p className="text-sm opacity-90">
+          Year: <span className="text-yellow-200 font-medium">{year || "N/A"}</span>
+        </p>
       </div>
-    </section>
+        <div className="flex items-center justify-between mb-6">
+          
+          <div>
+            <h2 className="text-2xl font-extrabold text-gray-800">
+              Upload Organisation Details (PDF)
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Upload a timetable PDF — we'll attempt to parse it into structured
+              data.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              to={`/dashboard/organisation-data-taker/${courseId}/${year}/data`}
+              className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50"
+            >
+              <FileText className="w-4 h-4" />
+              Manual Editor
+            </Link>
+          </div>
+        </div>
+
+        {/* Upload area */}
+        <form onSubmit={handleUpload} className="space-y-6">
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            className={`
+              flex flex-col items-center justify-center gap-4 p-6 border-2 border-dashed rounded-xl cursor-pointer transition 
+              ${isDragging
+                ? "border-blue-500 bg-blue-50 scale-[1.02]"
+                : "border-gray-300"
+              }
+            `}
+            onClick={() => fileInputRef.current && fileInputRef.current.click()}
+          >
+            <div className="flex items-center gap-3">
+              <UploadCloud
+                className={`w-10 h-10 transition ${isDragging ? "text-blue-600 animate-bounce" : "text-blue-500"
+                  }`}
+              />
+              <div className="text-left">
+                <p className="font-medium text-gray-800">
+                  {isDragging
+                    ? "Drop the PDF here..."
+                    : file
+                      ? file.name
+                      : "Click to upload or drag & drop your PDF"}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Only PDF files. Parsing may take a few seconds.
+                </p>
+              </div>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              id="file"
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="submit"
+              disabled={uploading}
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-xl shadow-md hover:bg-blue-700 transition disabled:opacity-60"
+            >
+              {uploading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <UploadCloud className="w-5 h-5" />
+              )}
+              {uploading ? "Processing..." : "Upload & Extract"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleReset}
+              className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 py-3 rounded-xl hover:bg-gray-50 transition"
+            >
+              <XCircle className="w-5 h-5" />
+              Reset
+            </button>
+          </div>
+        </form>
+
+        {/* Result / Preview area */}
+        {result && (
+          <div className="mt-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-lg text-gray-700 mb-1">
+                  Parsed Data — please verify before saving
+                </h3>
+                <p className="text-sm text-gray-500">
+                  The model tries its best but may be wrong. Edit manually if
+                  needed.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCopy}
+                  className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy JSON
+                </button>
+
+                <button
+                  onClick={handleDownload}
+                  className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </button>
+
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-md bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow hover:from-green-600 transition"
+                >
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  {saving ? "Saving..." : "Save & Fill"}
+                </button>
+              </div>
+            </div>
+
+            {result && (
+              <div className="mt-8 space-y-6">
+
+                {/* College Info */}
+                {result.college_info && (
+                  <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                    <h3 className="font-semibold text-blue-700 mb-2">College Information</h3>
+                    <p><strong>Name:</strong> {result.college_info.name}</p>
+                    <p><strong>Session:</strong> {result.college_info.session}</p>
+                    <p><strong>Effective Date:</strong> {result.college_info.effective_date}</p>
+                  </div>
+                )}
+
+                {/* Time Slots */}
+                {result.time_slots && (
+                  <div className="p-4 bg-green-50 border-l-4 border-green-600 rounded">
+                    <h3 className="font-semibold text-green-700 mb-2">Time Slots</h3>
+
+                    {result.time_slots.periods?.length > 0 && (
+                      <ul className="space-y-1 text-sm">
+                        {result.time_slots.periods.map((p, idx) => (
+                          <li key={idx} className="bg-white p-2 rounded shadow-sm">
+                            <strong>Period {p.id}</strong>: {p.start_time} → {p.end_time}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <p className="mt-2 text-sm"><strong>Working Days:</strong> {result.time_slots.working_days?.join(", ")}</p>
+                  </div>
+                )}
+
+                {/* Departments */}
+                {result.departments?.length > 0 && (
+                  <div className="p-4 bg-purple-50 border-l-4 border-purple-600 rounded">
+                    <h3 className="font-semibold text-purple-700 mb-3">Departments</h3>
+
+                    {result.departments.map((dept, idx) => (
+                      <div key={idx} className="bg-white p-3 rounded shadow mb-2">
+                        <p><strong>{dept.name}</strong> ({dept.dept_id})</p>
+
+                        {dept.sections?.length > 0 && (
+                          <ul className="list-disc text-sm ml-6 mt-2">
+                            {dept.sections.map((sec, sidx) => (
+                              <li key={sidx}>
+                                Section <strong>{sec.name}</strong> — Sem {sec.semester}, Year {sec.year}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Subjects */}
+                {result.subjects?.length > 0 && (
+                  <div className="p-4 bg-orange-50 border-l-4 border-orange-500 rounded">
+                    <h3 className="font-semibold text-orange-700 mb-2">Subjects</h3>
+
+                    <ul className="space-y-1 text-sm">
+                      {result.subjects.map((sub, idx) => (
+                        <li key={idx} className="bg-white p-2 rounded shadow-sm">
+                          <strong>{sub.subject_id}</strong> — {sub.name} ({sub.department})
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Faculty */}
+                {result.faculty?.length > 0 && (
+                  <div className="p-4 bg-teal-50 border-l-4 border-teal-600 rounded">
+                    <h3 className="font-semibold text-teal-700 mb-3">Faculty</h3>
+
+                    <ul className="space-y-1 text-sm">
+                      {result.faculty.map((f, idx) => (
+                        <li key={idx} className="bg-white p-2 rounded shadow-sm">
+                          <strong>{f.name}</strong> ({f.department}) — {f.email}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Rooms */}
+                {result.rooms?.length > 0 && (
+                  <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                    <h3 className="font-semibold text-red-700 mb-2">Rooms</h3>
+
+                    {result.rooms.map((room, idx) => (
+                      <div key={idx} className="bg-white p-2 rounded shadow-sm text-sm">
+                        <strong>{room.name}</strong> ({room.room_id}) — Capacity: {room.capacity} ({room.type})
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+              </div>
+            )}
+
+
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                onClick={() => navigate("/dashboard/organisation-data-taker")}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white shadow hover:bg-blue-700 transition"
+              >
+                <ArrowRightCircle className="w-4 h-4" />
+                Edit Manually
+              </button>
+
+              <button
+                onClick={() => {
+                  toast.info(
+                    "You can still edit data on the manual editor after saving."
+                  );
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50"
+              >
+                <FileText className="w-4 h-4" />
+                View Guide
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!result && (
+          <div className="mt-8 text-center text-sm text-gray-500">
+            <p>After upload, parsed data will appear here for verification.</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

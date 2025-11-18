@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import { useOrganisation } from "../../context/OrganisationContext";
 import { useAppState } from "../../config";
+import { X, Menu } from "lucide-react";
 
 const DashboardLayout: React.FC = () => {
   const { organisation, logout } = useOrganisation();
@@ -14,11 +15,28 @@ const DashboardLayout: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-slate-50">
+
+      {/* Backdrop for mobile */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/40 z-30 md:hidden"
+        />
+      )}
+
+      {/* Sidebar */}
       <aside
-        className={`bg-white border-r shadow-sm w-64 p-5 flex flex-col gap-6 fixed inset-y-0 left-0 z-40 transform transition-transform md:static md:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`bg-white border-r shadow-sm w-64 p-5 flex flex-col gap-6 fixed inset-y-0 left-0 z-40 transform transition-transform md:static md:translate-x-0
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
+        {/* Close button (mobile only) */}
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="md:hidden mb-4 p-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 flex items-center gap-2"
+        >
+          <X size={18} /> Close
+        </button>
+
         <div>
           <div className="text-lg font-bold text-blue-600">Dashboard</div>
           <div className="text-sm text-slate-500">
@@ -27,19 +45,19 @@ const DashboardLayout: React.FC = () => {
         </div>
 
         <nav className="flex flex-col gap-1 text-sm font-medium">
-          <NavLink to="organisation-info" className={linkClasses}>
+          <NavLink to="organisation-info" onClick={() => setSidebarOpen(false)} className={linkClasses}>
             Institution Overview
           </NavLink>
 
-          <NavLink to="organisation-data-course" className={linkClasses}>
+          <NavLink to="organisation-data-course" onClick={() => setSidebarOpen(false)} className={linkClasses}>
             Academic Data Manager
           </NavLink>
 
-          <NavLink to="upload-pdf" className={linkClasses}>
+          <NavLink to="upload-pdf" onClick={() => setSidebarOpen(false)} className={linkClasses}>
             PDF Utilities
           </NavLink>
 
-          <NavLink to="timetables" className={linkClasses}>
+          <NavLink to="timetables" onClick={() => setSidebarOpen(false)} className={linkClasses}>
             Timetable Manager
           </NavLink>
         </nav>
@@ -52,13 +70,16 @@ const DashboardLayout: React.FC = () => {
         </button>
       </aside>
 
+      {/* Main content */}
       <div className="flex-1 md:ml-64 p-6">
+
         <div className="flex items-center justify-between mb-6">
+          {/* Open button on mobile */}
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="md:hidden px-3 py-2 border border-slate-300 rounded-lg text-sm"
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden px-3 py-2 border border-slate-300 rounded-lg text-sm flex gap-2 items-center"
           >
-            Menu
+            <Menu size={18} /> Menu
           </button>
 
           <h2 className="text-2xl font-semibold text-blue-600">

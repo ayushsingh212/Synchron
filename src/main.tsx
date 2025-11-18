@@ -76,7 +76,7 @@ const router = createBrowserRouter(
   <Route path="organisation-data-taker/:courseId/years" element={<YearSelection />} />
   <Route path="organisation-data-taker/:courseId/:year/data" element={<AcademicDataPage />} />
         <Route path="organisation-data-taker" element={<OrganisationDataTaker />} />
-        <Route path="upload-pdf" element={<UploadPdf />} />
+        <Route path="upload-pdf/:courseId/:year" element={<UploadPdf />} />
         <Route path="timetables" element={<TimetableManager />} />
         <Route path="faculty-timetable" element={<FacultyTimeTable />} />
         <Route path="section-timetable" element={<SectionTimeTable />} />
