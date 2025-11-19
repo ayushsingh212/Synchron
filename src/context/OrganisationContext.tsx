@@ -33,6 +33,8 @@ export const OrganisationProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [organisation, setOrganisation] = useState<OrganisationType | null>(null);
 
+  const [currentlyViewedTimtable, setCurrentlyViewedTimtable] = useState([])
+
   const getOrganisation = useCallback(async (): Promise<OrganisationType | null> => {
     try {
       const res = await axios.get(`${API_BASE_URL}/organisation/getCurrentOrganisation`, {
@@ -55,6 +57,8 @@ export const OrganisationProvider: React.FC<{ children: React.ReactNode }> = ({
         organisation,
         setOrganisation,
         getOrganisation,
+        currentlyViewedTimtable,
+        setCurrentlyViewedTimtable
       }}
     >
       {children}

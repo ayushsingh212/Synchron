@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { API_BASE_URL } from "../../config";
 import axios from "axios";
+import { useOrganisation } from "../../context/OrganisationContext";
 
 const TimetableManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"sections" | "faculty">("sections");
   const [sectionTimetables, setSectionTimetables] = useState<any[]>([]);
   const [facultyTimetables, setFacultyTimetables] = useState<any[]>([]);
-
+  const [apiResponse, setApiResponse] = useState(null)
   const list = activeTab === "sections" ? sectionTimetables : facultyTimetables;
-
+  const {currentlyViewedTimtable,setCurrentlyViewedTimtable} = useOrganisation();
   const fetchAllSectionTimeTable = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/timetable/sections`, {
@@ -17,6 +18,7 @@ const TimetableManager: React.FC = () => {
       });
 
       const data = res.data.data;
+      setApiResponse(data)
       const groups: any[] = [];
 
       Object.entries(data).forEach(([course, years]: any) => {
@@ -29,6 +31,7 @@ const TimetableManager: React.FC = () => {
               semester,
               count: Object.keys(sections).length
             });
+            setCurrentlyViewedTimtable([sections])
           });
         });
       });
@@ -46,6 +49,7 @@ const TimetableManager: React.FC = () => {
       });
 
       const data = res.data.data;
+      setApiResponse(data)
       const groups: any[] = [];
 
       Object.entries(data).forEach(([course, years]: any) => {
@@ -127,6 +131,7 @@ const TimetableManager: React.FC = () => {
                   : `/dashboard/facultyTimeTable/${item.course}/${item.year}/${item.semester}`
               }
               className="px-4 py-2 border rounded-lg text-sm"
+           
             >
               View
             </Link>

@@ -39,7 +39,7 @@ const OrganisationDataTaker = () => {
     college_info: { name: "", session: "", effective_date: "" },
     time_slots: {
       periods: [],
-      working_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      working_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], 
       break_periods: [],
       lunch_period: null,
       mentorship_period: null,
