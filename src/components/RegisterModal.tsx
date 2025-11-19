@@ -65,7 +65,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
         { organisationEmail: form.organisationEmail },
         { withCredentials: true }
       );
-
+     window.dispatchEvent(new CustomEvent("close-both-modal"));
      
       navigate(`/verify-Email/${form.organisationEmail}`)
     } catch (err: any) {

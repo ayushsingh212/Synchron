@@ -4,28 +4,18 @@ import LoginModal from "./LoginModal";
 import { Link, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import axios from "axios";
+import { useOrganisation } from "../context/OrganisationContext";
 
 const Navbar: React.FC = () => {
   const [showRegister, setShowRegister] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
+    const { organisation,getOrganisation,setOrganisation } = useOrganisation();
 
-  const checkUserLoggedIn = async () => {
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/organisation/getCurrentOrganisation`,
-        { withCredentials: true }
-      );
-      setIsLoggedIn(true);
-    } catch (error) {
-      console.log("User not logged in:", error);
-      setIsLoggedIn(false);
-    }
-  };
 
   useEffect(() => {
-    checkUserLoggedIn();
+     getOrganisation()
 
     const openRegister = () => {
       setShowLogin(false);
@@ -36,20 +26,26 @@ const Navbar: React.FC = () => {
       setShowRegister(false);
       setShowLogin(true);
     };
+    const closeBoth = ()=>{
+      setShowLogin(false);
+      setShowRegister(false)
+    }
 
     window.addEventListener("open-register-modal", openRegister);
     window.addEventListener("open-login-modal", openLogin);
+    window.addEventListener("close-both-modal", closeBoth);
 
     return () => {
       window.removeEventListener("open-register-modal", openRegister);
       window.removeEventListener("open-login-modal", openLogin);
+      window.removeEventListener("close-both-modal", closeBoth);
     };
   }, []);
 
   const handleLogout = async () => {
     try {
       await axios.post(`${API_BASE_URL}/organisation/logout`, {}, { withCredentials: true });
-      setIsLoggedIn(false);
+      setOrganisation(null);
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -65,7 +61,7 @@ const Navbar: React.FC = () => {
           </h1>
 
           <nav className="flex items-center gap-6 text-sm md:text-base font-semibold">
-            {isLoggedIn ? (
+            {organisation ? (
               <>
                 <Link
                   to="/dashboard/organisation-info"
