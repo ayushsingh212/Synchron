@@ -16,7 +16,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const UploadPdf = () => {
-    const {courseId,year} = useParams()
+    const {courseId,year,semester} = useParams()
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -127,7 +127,7 @@ const UploadPdf = () => {
       }
 
       const res = await axios.post(
-        `${API_BASE_URL}/timetable/saveData?course=${courseId}&year=${year}`,
+        `${API_BASE_URL}/timetable/saveData?course=${courseId}&year=${year}&semester=${semester}`,
         result,
         {
           headers: { "Content-Type": "application/json" },
@@ -139,7 +139,7 @@ const UploadPdf = () => {
       toast.success("Saved to database successfully!");
 
       setTimeout(() => {
-        navigate(`/dashboard/organisation-data-taker/${courseId}/${year}/data`);
+        navigate(`/dashboard/organisation-data-taker/${courseId}/${year}/${semester}/data`);
       }, 900);
     } catch (error) {
       console.error("Saving error:", error);
@@ -189,6 +189,9 @@ const UploadPdf = () => {
         </h2>
         <p className="text-sm opacity-90">
           Year: <span className="text-yellow-200 font-medium">{year || "N/A"}</span>
+        </p>
+         <p className="text-sm opacity-90">
+          Semester: <span className="text-yellow-200 font-medium">{semester || "N/A"}</span>
         </p>
       </div>
         <div className="flex items-center justify-between mb-6">

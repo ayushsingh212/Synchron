@@ -48,12 +48,12 @@ import AcademicDataPage from "./pages/AcademicDataPage";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Temp />}>
-   
+
       <Route index element={<Home />} />
       <Route path="about" element={<About />} />
       <Route path="contact" element={<Contact />} />
 
-   
+
       {/* <Route path="login-register" element={<OrganisationRegister />} /> */}
 
       {/* Email Verification */}
@@ -67,19 +67,19 @@ const router = createBrowserRouter(
         path="dashboard"
         element={
           // <ProtectedRoute>
-            <DashboardLayout />
+          <DashboardLayout />
           // </ProtectedRoute>
         }
       >
         <Route path="organisation-info" element={<OrganisationInfo />} />
-          <Route path="organisation-data-course" element={<CourseSelection />} />
-  <Route path="organisation-data-taker/:courseId/years" element={<YearSelection />} />
-  <Route path="organisation-data-taker/:courseId/:year/data" element={<AcademicDataPage />} />
+        <Route path="organisation-data-course" element={<CourseSelection />} />
+        <Route path="organisation-data-taker/:courseId/years" element={<YearSelection />} />
+        <Route path="organisation-data-taker/:courseId/:year/:semester/data" element={<AcademicDataPage />} />
         <Route path="organisation-data-taker" element={<OrganisationDataTaker />} />
-        <Route path="upload-pdf/:courseId/:year" element={<UploadPdf />} />
+        <Route path="upload-pdf/:courseId/:year/:semester" element={<UploadPdf />} />
         <Route path="timetables" element={<TimetableManager />} />
-        <Route path="faculty-timetable" element={<FacultyTimeTable />} />
-        <Route path="section-timetable" element={<SectionTimeTable />} />
+        <Route path="facultyTimeTable/:courseId/:year/:semester" element={<FacultyTimeTable />} />
+        <Route path="sectionTimeTable/:courseId/:year/:semester" element={<SectionTimeTable />} />
         <Route path="manage-timetable" element={<TimetableManager />} />
       </Route>
     </Route>

@@ -16,7 +16,7 @@ const DashboardLayout: React.FC = () => {
   return (
     <div className="flex min-h-screen bg-slate-50">
 
-      {/* Backdrop for mobile */}
+    
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
@@ -24,12 +24,12 @@ const DashboardLayout: React.FC = () => {
         />
       )}
 
-      {/* Sidebar */}
+    
       <aside
         className={`bg-white border-r shadow-sm w-64 p-5 flex flex-col gap-6 fixed inset-y-0 left-0 z-40 transform transition-transform md:static md:translate-x-0
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        {/* Close button (mobile only) */}
+     
         <button
           onClick={() => setSidebarOpen(false)}
           className="md:hidden mb-4 p-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 flex items-center gap-2"
@@ -53,9 +53,7 @@ const DashboardLayout: React.FC = () => {
             Academic Data Manager
           </NavLink>
 
-          <NavLink to="upload-pdf" onClick={() => setSidebarOpen(false)} className={linkClasses}>
-            PDF Utilities
-          </NavLink>
+      
 
           <NavLink to="timetables" onClick={() => setSidebarOpen(false)} className={linkClasses}>
             Timetable Manager
@@ -71,10 +69,10 @@ const DashboardLayout: React.FC = () => {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 md:ml-64 p-6">
+      <div className="flex-1 md:ml-6 p-6">
 
         <div className="flex items-center justify-between mb-6">
-          {/* Open button on mobile */}
+        
           <button
             onClick={() => setSidebarOpen(true)}
             className="md:hidden px-3 py-2 border border-slate-300 rounded-lg text-sm flex gap-2 items-center"

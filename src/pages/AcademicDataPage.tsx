@@ -15,7 +15,7 @@ const OrganisationDataTaker = () => {
   const navigate = useNavigate();
   const {hasOrganisationData,setHasOrganisationData} = useAppState()
   
-  const {courseId,year} = useParams()
+  const {courseId,year,semester} = useParams()
 
   const defaultTemplates = {
     department: { dept_id: "", name: "", sections: [] },
@@ -57,7 +57,7 @@ const OrganisationDataTaker = () => {
     try {
       console.log("Here is the year and course",year,courseId)
       const savedData = await axios.get(
-`${API_BASE_URL}/organisation/getOrganisationSavedData?year=${year}&course=${courseId}`,
+`${API_BASE_URL}/organisation/getOrganisationSavedData?year=${year}&course=${courseId}&semester=${semester}`,
         {
           withCredentials: true,
         }
@@ -243,7 +243,7 @@ const OrganisationDataTaker = () => {
       );
 
       const res = await axios.post(
-        `${API_BASE_URL}/timetable/saveData/?course=${courseId}?year=${year}`,
+        `${API_BASE_URL}/timetable/saveData/?course=${courseId}&year=${year}&semester=${semester}`,
         payload,
         {
           withCredentials: true,
@@ -273,7 +273,7 @@ const OrganisationDataTaker = () => {
       toast.error("No data saved yet to start generation")
      }
       const res = await axios.post(
-        `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}`,
+        `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}&semester=${semester}`,
         {},
         { withCredentials: true }
       );
@@ -281,6 +281,7 @@ const OrganisationDataTaker = () => {
 
       if (res.data?.data) {
         setHasOrganisationData(true)
+        toast.success("Generation Successfull");
       } else {
          setHasOrganisationData(false)
       }
@@ -436,6 +437,9 @@ const OrganisationDataTaker = () => {
         <p className="text-sm opacity-90">
           Year: <span className="text-yellow-200 font-medium">{year || "N/A"}</span>
         </p>
+          <p className="text-sm opacity-90">
+          Semester: <span className="text-yellow-200 font-medium">{semester || "N/A"}</span>
+        </p>
       </div>
         <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded mb-6 flex justify-between items-center">
     <div>
@@ -446,7 +450,7 @@ const OrganisationDataTaker = () => {
     </div>
     <button
       className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded shadow"
-      onClick={() => navigate(`/dashboard/upload-pdf/${courseId}/${year}`)}
+      onClick={() => navigate(`/dashboard/upload-pdf/${courseId}/${year}/${semester}`)}
     >
       Upload PDF
     </button>
@@ -1408,7 +1412,7 @@ const OrganisationDataTaker = () => {
           </button>
           <button
             className={btnPrimary}
-            onClick={generateJson}
+            onClick={saveAndGenerate}
             disabled={isSubmitting}
           >
             {isSubmitting ? "Generating..." : "Save and Generate"}
