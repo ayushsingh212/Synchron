@@ -55,7 +55,7 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
       });
       toast.success("Login successful");
       // window.location.href = "/dashboard/organisation-info";
-      navigate("/dashboard/")
+      navigate("/dashboard/organisation-info")
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Login failed");
     } finally {

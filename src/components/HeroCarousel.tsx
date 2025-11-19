@@ -25,7 +25,7 @@ const slides = [
   {
     title: "Collaborate With Faculty & Students",
     subtitle: "Share timetables, changes and announcements in real time.",
-    image: "./img3.jpg",
+    image: "./img4.jpg",
   },
 ];
 
