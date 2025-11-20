@@ -102,7 +102,7 @@ const OrganisationDataTaker = () => {
           dept.sections.forEach((section, secIndex) => {
             if (!section.section_id || !section.name) {
               newErrors[`section_${deptIndex}_${secIndex}`] =
-                "Section ID and name are required";
+                "Section ID and name are requir ed";
             }
           });
         }

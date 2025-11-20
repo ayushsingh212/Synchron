@@ -1,5 +1,5 @@
 import React from "react";
-import { Outlet, NavLink } from "react-router-dom";
+import { Outlet, NavLink , useLocation } from "react-router-dom";
 import { useOrganisation } from "../../context/OrganisationContext";
 import { useAppState } from "../../config";
 import { X, Menu } from "lucide-react";
@@ -7,6 +7,22 @@ import { X, Menu } from "lucide-react";
 const DashboardLayout: React.FC = () => {
   const { organisation, logout } = useOrganisation();
   const { sidebarOpen, setSidebarOpen } = useAppState();
+
+    const location = useLocation();
+  const pathname = location.pathname;
+
+  const getPageTitle = () => {
+    if (pathname.includes("organisation-info")) {
+      return "Institution Overview";
+    }
+    if (pathname.includes("organisation-data-course")) {
+      return "Academic Data Manager";
+    }
+    if (pathname.includes("timetables")) {
+      return "Timetable Manager";
+    }
+    return "Institution Dashboard";
+  };
 
   const linkClasses = ({ isActive }: { isActive: boolean }) =>
     isActive
@@ -81,7 +97,7 @@ const DashboardLayout: React.FC = () => {
           </button>
 
           <h2 className="text-2xl font-semibold text-blue-600">
-            Institution Dashboard
+            {getPageTitle()}
           </h2>
         </div>
 

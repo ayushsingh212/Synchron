@@ -1,14 +1,6 @@
 import React, { useState } from "react";
 
-/**
- * This page guides admin through creating the input dataset:
- * - Select course
- * - Select year
- * - Add sections and faculty mapping
- * - Save as draft
- *
- * For production: use server validation and incremental saves
- */
+
 
 const OrganisationDataTaker: React.FC = () => {
   const [course, setCourse] = useState("B.Tech");
