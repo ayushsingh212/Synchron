@@ -566,155 +566,285 @@ const OrganisationDataTaker = () => {
               </div>
             </div>
           )}
-
-          {activeTab === "time" && (
+{activeTab === "time" && (
   <div>
     <h2 className="text-xl font-semibold mb-4">Time Slots</h2>
 
     {/* ERROR */}
-    {errors.periods && (
+    {errors?.periods && (
       <p className="text-red-500 text-sm mb-2">{errors.periods}</p>
     )}
 
-    {/* INPUT: START TIME */}
-    <div className="mb-4">
-      <label className="block text-sm font-medium mb-1">Start Time</label>
-      <input
-        type="time"
-        className="border p-2 rounded w-full"
-        value={formData.time_slots.start_time || ""}
-        onChange={(e) =>
-          setFormData({
-            ...formData,
-            time_slots: {
-              ...formData.time_slots,
-              start_time: e.target.value,
-            },
-          })
-        }
-      />
+    {/* INPUTS: START TIME, END TIME, PERIOD COUNT, DURATION, BREAKS (Inputs remain unchanged) */}
+    {/* ... (Existing input JSX code for start_time, end_time, periodCount, periodDuration, shortBreak, lunchBreak) ... */}
+
+    <div className="grid grid-cols-2 gap-4">
+      {/* INPUT: START TIME */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Start Time</label>
+        <input
+          type="time"
+          className="border p-2 rounded w-full"
+          value={formData.time_slots.start_time || ""}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              time_slots: {
+                ...formData.time_slots,
+                start_time: e.target.value,
+              },
+            })
+          }
+        />
+      </div>
+
+      {/* INPUT: END TIME */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">End Time</label>
+        <input
+          type="time"
+          className="border p-2 rounded w-full"
+          value={formData.time_slots.end_time || ""}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              time_slots: {
+                ...formData.time_slots,
+                end_time: e.target.value,
+              },
+            })
+          }
+        />
+      </div>
     </div>
 
-    {/* INPUT: END TIME */}
-    <div className="mb-4">
-      <label className="block text-sm font-medium mb-1">End Time</label>
-      <input
-        type="time"
-        className="border p-2 rounded w-full"
-        value={formData.time_slots.end_time || ""}
-        onChange={(e) =>
-          setFormData({
-            ...formData,
-            time_slots: {
-              ...formData.time_slots,
-              end_time: e.target.value,
-            },
-          })
-        }
-      />
+    <div className="grid grid-cols-2 gap-4">
+      {/* INPUT: NUMBER OF PERIODS */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Number of Periods</label>
+        <select
+          className="border p-2 rounded w-full"
+          value={formData.time_slots.periodCount || ""}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              time_slots: {
+                ...formData.time_slots,
+                periodCount: Number(e.target.value),
+              },
+            })
+          }
+        >
+          <option value="">Select</option>
+          <option value={6}>6 Periods</option>
+          <option value={7}>7 Periods</option>
+          <option value={8}>8 Periods</option>
+        </select>
+      </div>
+
+      {/* INPUT: PERIOD DURATION */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Period Duration (minutes)</label>
+        <input
+          type="number"
+          min="30"
+          max="90"
+          placeholder="45"
+          className="border p-2 rounded w-full"
+          value={formData.time_slots.periodDuration || ""}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              time_slots: {
+                ...formData.time_slots,
+                periodDuration: Number(e.target.value),
+              },
+            })
+          }
+        />
+      </div>
     </div>
 
-    {/* INPUT: NUMBER OF PERIODS */}
-    <div className="mb-4">
-      <label className="block text-sm font-medium mb-1">Number of Periods</label>
-      <select
-        className="border p-2 rounded w-full"
-        value={formData.time_slots.periodCount || ""}
-        onChange={(e) =>
-          setFormData({
-            ...formData,
-            time_slots: {
-              ...formData.time_slots,
-              periodCount: Number(e.target.value),
-            },
-          })
-        }
-      >
-        <option value="">Select</option>
-        <option value={6}>6 Periods</option>
-        <option value={8}>8 Periods</option>
-      </select>
+    <div className="grid grid-cols-2 gap-4">
+      {/* INPUT: SHORT BREAK DURATION */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Short Break (minutes)</label>
+        <input
+          type="number"
+          min="5"
+          max="30"
+          placeholder="10"
+          className="border p-2 rounded w-full"
+          value={formData.time_slots.shortBreak || ""}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              time_slots: {
+                ...formData.time_slots,
+                shortBreak: Number(e.target.value),
+              },
+            })
+          }
+        />
+      </div>
+
+      {/* INPUT: LUNCH BREAK DURATION */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Lunch Break (minutes)</label>
+        <input
+          type="number"
+          min="15"
+          max="60"
+          placeholder="30"
+          className="border p-2 rounded w-full"
+          value={formData.time_slots.lunchBreak || ""}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              time_slots: {
+                ...formData.time_slots,
+                lunchBreak: Number(e.target.value),
+              },
+            })
+          }
+        />
+      </div>
     </div>
 
-    {/* BUTTON TO AUTO GENERATE PERIODS */}
     <button
-      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 w-full mb-6"
       onClick={() => {
-        const { start_time, end_time, periodCount } = formData.time_slots;
+        // --- START REVISED LOGIC FOR PYTHON MODEL COMPATIBILITY ---
+        const { start_time, end_time, periodCount, periodDuration, shortBreak, lunchBreak } = formData.time_slots;
 
-        if (!start_time || !end_time || !periodCount)
-          return alert("Please enter start time, end time, and number of periods.");
+        if (!start_time || !end_time || !periodCount || !periodDuration)
+          return alert("Please fill all required fields before generating periods.");
 
-        // Convert times to minutes
         const [sh, sm] = start_time.split(":").map(Number);
         const [eh, em] = end_time.split(":").map(Number);
         const startMinutes = sh * 60 + sm;
         const endMinutes = eh * 60 + em;
 
-        const totalMinutes = endMinutes - startMinutes;
-        const eachPeriod = Math.floor(totalMinutes / periodCount);
+        if (endMinutes <= startMinutes)
+          return alert("End time must be AFTER start time.");
 
-        // Build periods list
+        const PERIOD_DURATION = periodDuration || 45;
+        const SHORT_BREAK = shortBreak || 10;
+        const LUNCH_BREAK = lunchBreak || 30;
+
+        const format = (m) =>
+          `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(
+            m % 60
+          ).padStart(2, "0")}`;
+
         const generatedPeriods = [];
+        let currentTime = startMinutes;
+
+        // Configuration fields required by the Python model:
+        const breakPeriodsConfig = []; // Period IDs AFTER which a short break occurs
+        let lunchPeriodId = null;     // Period ID AFTER which lunch occurs
+        
+        // Define break placement logic (e.g., Short Break after 3, Lunch after 5)
+        if (periodCount >= 3) breakPeriodsConfig.push(3);
+        if (periodCount >= 5) lunchPeriodId = 5;
+
         for (let i = 0; i < periodCount; i++) {
-          const pStart = startMinutes + i * eachPeriod;
-          const pEnd = pStart + eachPeriod;
-
-          const format = (m) =>
-            `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(
-              m % 60
-            ).padStart(2, "0")}`;
-
+          const periodNum = i + 1;
+          
+          // 1. Add Period (SIMPLE OBJECT for Python)
           generatedPeriods.push({
-            id: i + 1,
-            start_time: format(pStart),
-            end_time: format(pEnd),
+            id: periodNum,
+            start_time: format(currentTime),
+            end_time: format(currentTime + PERIOD_DURATION),
           });
+          
+          // Advance time by period duration
+          currentTime += PERIOD_DURATION;
+
+          // 2. Apply Break/Lunch Time (ADVANCE TIMER ONLY, NO OBJECT CREATED)
+          
+          // Short Break after Period 3
+          if (periodNum === 3) {
+            currentTime += SHORT_BREAK;
+          }
+
+          // Lunch Break after Period 5
+          if (periodNum === 5) {
+            currentTime += LUNCH_BREAK;
+          }
         }
 
-        // Update state
+        // Check if we exceeded the end time
+        if (currentTime > endMinutes) {
+          const totalDuration = currentTime - startMinutes;
+          const hoursNeeded = Math.floor(totalDuration / 60);
+          const minsNeeded = totalDuration % 60;
+          return alert(
+            `Not enough time! You need ${hoursNeeded}h ${minsNeeded}m for ${periodCount} periods and breaks, which ends at ${format(currentTime)}.`
+          );
+        }
+
+        // Update State: Send simplified periods and the configuration data
         setFormData({
           ...formData,
           time_slots: {
             ...formData.time_slots,
             periods: generatedPeriods,
+            break_periods: breakPeriodsConfig.filter(id => id !== lunchPeriodId),
+            lunch_period: lunchPeriodId,
           },
         });
+        // --- END REVISED LOGIC ---
       }}
     >
-      Generate Time Table Periods
+      Generate Time Slots
     </button>
 
     {/* RENDER GENERATED PERIODS */}
     <div className="mt-6">
-      <h3 className="text-lg font-medium mb-2">Generated Periods</h3>
-      {formData.time_slots.periods?.length > 0 ? (
+      <h3 className="text-lg font-medium mb-3">Generated Schedule (Raw Periods)</h3>
+
+      {formData.time_slots?.periods?.length > 0 ? (
         <div className="space-y-2">
           {formData.time_slots.periods.map((p) => (
+            // --- START REVISED DISPLAY LOGIC ---
             <div
               key={p.id}
-              className="border p-3 rounded bg-gray-50 flex justify-between"
+              className={`border-l-4 p-3 rounded-r shadow-sm flex justify-between items-center bg-blue-50 border-blue-500`}
             >
-              <span>Period {p.id}</span>
-              <span>
-                {p.start_time} - {p.end_time}
-              </span>
+              <div className="flex flex-col">
+                {/* Use Period ID, as label/type are removed */}
+                <span className="font-semibold text-gray-800">Period {p.id}</span>
+                {/* Display duration from the main input value, as it's not in the period object */}
+                <span className="text-xs text-gray-500">
+                  {formData.time_slots.periodDuration || '45'} minutes
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="font-mono text-sm text-gray-700">
+                  {p.start_time} – {p.end_time}
+                </span>
+              </div>
             </div>
+            // --- END REVISED DISPLAY LOGIC ---
           ))}
         </div>
       ) : (
-        <p className="text-gray-400">No periods generated yet.</p>
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+          <p className="text-gray-400">No schedule generated yet.</p>
+          <p className="text-gray-400 text-sm mt-1">Fill in the details above and click "Generate Time Slots"</p>
+        </div>
       )}
     </div>
 
     {/* WORKING DAYS */}
     <div className="mt-6">
-      <h3 className="text-lg font-medium mb-2">Working Days</h3>
+      <h3 className="text-lg font-medium mb-3">Working Days</h3>
       <div className="flex flex-wrap gap-2">
         {formData.time_slots.working_days.map((day) => (
           <span
             key={day}
-            className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
+            className="bg-indigo-100 text-indigo-800 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm"
           >
             {day}
           </span>
@@ -723,7 +853,6 @@ const OrganisationDataTaker = () => {
     </div>
   </div>
 )}
-
           {activeTab === "departments" && (
             <div>
               <h2 className="text-xl font-semibold mb-4">Departments</h2>
@@ -767,7 +896,7 @@ const OrganisationDataTaker = () => {
                               e.target.value
                             )
                           }
-                          placeholder="e.g., CS"
+                          placeholder="e.g., CS"cls
                         />
                       </div>
                       <div>
