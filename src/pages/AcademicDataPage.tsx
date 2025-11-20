@@ -568,64 +568,161 @@ const OrganisationDataTaker = () => {
           )}
 
           {activeTab === "time" && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Time Slots</h2>
-              {shouldShowError("periods") && (
-                <p className="text-red-500 text-sm mb-2">{errors.periods}</p>
-              )}
-              <ArrayInput
-                section="time_slots.periods"
-                data={formData.time_slots.periods}
-                errorKey="period"
-                fields={[
-                  {
-                    name: "id",
-                    label: "Period ID",
-                    type: "number",
-                    required: true,
-                  },
-                  {
-                    name: "start_time",
-                    label: "Start Time",
-                    type: "time",
-                    required: true,
-                  },
-                  {
-                    name: "end_time",
-                    label: "End Time",
-                    type: "time",
-                    required: true,
-                  },
-                ]}
-              />
-              <div className="mt-4">
-                <button
-                  type="button"
-                  className={btnSuccess}
-                  onClick={() =>
-                    addArrayItem("time_slots.periods", {
-                      ...defaultTemplates.period,
-                    })
-                  }
-                >
-                  Add Period
-                </button>
-              </div>
-              <div className="mt-6">
-                <h3 className="text-lg font-medium mb-2">Working Days</h3>
-                <div className="flex flex-wrap gap-2">
-                  {formData.time_slots.working_days.map((day) => (
-                    <span
-                      key={day}
-                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
-                    >
-                      {day}
-                    </span>
-                  ))}
-                </div>
-              </div>
+  <div>
+    <h2 className="text-xl font-semibold mb-4">Time Slots</h2>
+
+    {/* ERROR */}
+    {errors.periods && (
+      <p className="text-red-500 text-sm mb-2">{errors.periods}</p>
+    )}
+
+    {/* INPUT: START TIME */}
+    <div className="mb-4">
+      <label className="block text-sm font-medium mb-1">Start Time</label>
+      <input
+        type="time"
+        className="border p-2 rounded w-full"
+        value={formData.time_slots.start_time || ""}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            time_slots: {
+              ...formData.time_slots,
+              start_time: e.target.value,
+            },
+          })
+        }
+      />
+    </div>
+
+    {/* INPUT: END TIME */}
+    <div className="mb-4">
+      <label className="block text-sm font-medium mb-1">End Time</label>
+      <input
+        type="time"
+        className="border p-2 rounded w-full"
+        value={formData.time_slots.end_time || ""}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            time_slots: {
+              ...formData.time_slots,
+              end_time: e.target.value,
+            },
+          })
+        }
+      />
+    </div>
+
+    {/* INPUT: NUMBER OF PERIODS */}
+    <div className="mb-4">
+      <label className="block text-sm font-medium mb-1">Number of Periods</label>
+      <select
+        className="border p-2 rounded w-full"
+        value={formData.time_slots.periodCount || ""}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            time_slots: {
+              ...formData.time_slots,
+              periodCount: Number(e.target.value),
+            },
+          })
+        }
+      >
+        <option value="">Select</option>
+        <option value={6}>6 Periods</option>
+        <option value={8}>8 Periods</option>
+      </select>
+    </div>
+
+    {/* BUTTON TO AUTO GENERATE PERIODS */}
+    <button
+      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+      onClick={() => {
+        const { start_time, end_time, periodCount } = formData.time_slots;
+
+        if (!start_time || !end_time || !periodCount)
+          return alert("Please enter start time, end time, and number of periods.");
+
+        // Convert times to minutes
+        const [sh, sm] = start_time.split(":").map(Number);
+        const [eh, em] = end_time.split(":").map(Number);
+        const startMinutes = sh * 60 + sm;
+        const endMinutes = eh * 60 + em;
+
+        const totalMinutes = endMinutes - startMinutes;
+        const eachPeriod = Math.floor(totalMinutes / periodCount);
+
+        // Build periods list
+        const generatedPeriods = [];
+        for (let i = 0; i < periodCount; i++) {
+          const pStart = startMinutes + i * eachPeriod;
+          const pEnd = pStart + eachPeriod;
+
+          const format = (m) =>
+            `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(
+              m % 60
+            ).padStart(2, "0")}`;
+
+          generatedPeriods.push({
+            id: i + 1,
+            start_time: format(pStart),
+            end_time: format(pEnd),
+          });
+        }
+
+        // Update state
+        setFormData({
+          ...formData,
+          time_slots: {
+            ...formData.time_slots,
+            periods: generatedPeriods,
+          },
+        });
+      }}
+    >
+      Generate Time Table Periods
+    </button>
+
+    {/* RENDER GENERATED PERIODS */}
+    <div className="mt-6">
+      <h3 className="text-lg font-medium mb-2">Generated Periods</h3>
+      {formData.time_slots.periods?.length > 0 ? (
+        <div className="space-y-2">
+          {formData.time_slots.periods.map((p) => (
+            <div
+              key={p.id}
+              className="border p-3 rounded bg-gray-50 flex justify-between"
+            >
+              <span>Period {p.id}</span>
+              <span>
+                {p.start_time} - {p.end_time}
+              </span>
             </div>
-          )}
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-400">No periods generated yet.</p>
+      )}
+    </div>
+
+    {/* WORKING DAYS */}
+    <div className="mt-6">
+      <h3 className="text-lg font-medium mb-2">Working Days</h3>
+      <div className="flex flex-wrap gap-2">
+        {formData.time_slots.working_days.map((day) => (
+          <span
+            key={day}
+            className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
+          >
+            {day}
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
 
           {activeTab === "departments" && (
             <div>
