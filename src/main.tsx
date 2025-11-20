@@ -43,6 +43,8 @@ import StateContextProvider from "./config";
 import CourseSelection from "./pages/CourseSelection";
 import YearSelection from "./pages/YearSelection";
 import AcademicDataPage from "./pages/AcademicDataPage";
+import VariantListPage from "./pages/VariantListPage";
+import VariantViewerPage from "./pages/VariantViewerPage";
 
 
 const router = createBrowserRouter(
@@ -81,7 +83,11 @@ const router = createBrowserRouter(
         <Route path="facultyTimeTable/:courseId/:year/:semester" element={<FacultyTimeTable />} />
         <Route path="sectionTimeTable/:courseId/:year/:semester" element={<SectionTimeTable />} />
         <Route path="manage-timetable" element={<TimetableManager />} />
+        <Route path="timetable/variants/:courseId/:year/:semester" element={<VariantListPage />} />
+        <Route path="timetable/variant/view/:id" element={<VariantViewerPage />} />
       </Route>
+
+
     </Route>
   )
 );
