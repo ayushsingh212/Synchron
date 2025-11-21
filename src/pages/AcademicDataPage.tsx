@@ -1,9 +1,56 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import axios from "axios";
-import { API_BASE_URL,useAppState } from "../config";
-
+import { API_BASE_URL, useAppState } from "../config";
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
+
+// ---------------------------
+// ⭐ Custom Debounce Hook
+// ---------------------------
+const useDebounce = (value: any, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
+// ---------------------------
+// ⭐ Debounced Callback Hook
+// ---------------------------
+const useDebouncedCallback = (callback: Function, delay: number) => {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const debouncedFunction = useCallback(
+    (...args: any[]) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    },
+    [callback, delay]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  return debouncedFunction;
+};
 
 const OrganisationDataTaker = () => {
   const [activeTab, setActiveTab] = useState("college");
@@ -15,12 +62,11 @@ const OrganisationDataTaker = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const navigate = useNavigate();
-  const {hasOrganisationData,setHasOrganisationData} = useAppState()
+  const { hasOrganisationData, setHasOrganisationData } = useAppState();
 
-  
-  const {courseId,year,semester} = useParams()
+  const { courseId, year, semester } = useParams();
 
-  const defaultTemplates = {
+  const defaultTemplates = useMemo(() => ({
     department: { dept_id: "", name: "", sections: [] },
     section: {
       section_id: "",
@@ -36,13 +82,13 @@ const OrganisationDataTaker = () => {
     faculty: { faculty_id: "", name: "", department: "", email: "" },
     room: { room_id: "", name: "", capacity: 0, type: "classroom" },
     period: { id: null, start_time: "", end_time: "" },
-  };
+  }), []);
 
-  const initialFormData = {
+  const initialFormData = useMemo(() => ({
     college_info: { name: "", session: "", effective_date: "" },
     time_slots: {
       periods: [],
-      working_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], 
+      working_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
       break_periods: [],
       lunch_period: null,
       mentorship_period: null,
@@ -52,25 +98,28 @@ const OrganisationDataTaker = () => {
     labs: [],
     faculty: [],
     rooms: [],
-  };
+  }), []);
 
   const [formData, setFormData] = useState(initialFormData);
-const getSavedData = async () => {
-  try {
-    setIsLoading(true);
-    const savedData = await axios.get(
-      `${API_BASE_URL}/organisation/getOrganisationSavedData?year=${year}&course=${courseId}&semester=${semester}`,
-      { withCredentials: true }
-    );
-    setFormData(savedData.data?.data || initialFormData);
-    setHasOrganisationData(true);
-  } catch (error) {
-    console.log("Old data fetch failed", error);
-  } finally {
-    setIsLoading(false);
-  }
-};
 
+  // Debounce formData for validation (500ms delay)
+  const debouncedFormData = useDebounce(formData, 500);
+
+  const getSavedData = async () => {
+    try {
+      setIsLoading(true);
+      const savedData = await axios.get(
+        `${API_BASE_URL}/organisation/getOrganisationSavedData?year=${year}&course=${courseId}&semester=${semester}`,
+        { withCredentials: true }
+      );
+      setFormData(savedData.data?.data || initialFormData);
+      setHasOrganisationData(true);
+    } catch (error) {
+      console.log("Old data fetch failed", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const validateForm = useCallback(() => {
     const newErrors = {};
@@ -104,7 +153,7 @@ const getSavedData = async () => {
           dept.sections.forEach((section, secIndex) => {
             if (!section.section_id || !section.name) {
               newErrors[`section_${deptIndex}_${secIndex}`] =
-                "Section ID and name are requir ed";
+                "Section ID and name are required";
             }
           });
         }
@@ -130,14 +179,26 @@ const getSavedData = async () => {
     setForm();
   }, []);
 
-  // Only validate when user has attempted to submit
+  // Validate using debounced form data
   useEffect(() => {
     if (hasAttemptedSubmit) {
       validateForm();
     }
-  }, [formData, hasAttemptedSubmit, validateForm]);
+  }, [debouncedFormData, hasAttemptedSubmit, validateForm]);
 
-  const handleInputChange = (section, field, value) => {
+  // Debounced input change handler
+  const handleInputChange = useDebouncedCallback(
+    (section: string, field: string, value: any) => {
+      setFormData((prev) => ({
+        ...prev,
+        [section]: { ...prev[section], [field]: value },
+      }));
+    },
+    300
+  );
+
+  // Immediate state update for controlled inputs
+  const handleInputChangeImmediate = (section: string, field: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
       [section]: { ...prev[section], [field]: value },
@@ -158,13 +219,13 @@ const getSavedData = async () => {
   }, []);
 
   const GlobalLoader = ({ show }: { show: boolean }) => {
-  if (!show) return null;
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-[9999]">
-      <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  );
-};
+    if (!show) return null;
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-[9999]">
+        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  };
 
   const handleItemChange = useCallback((path, index, field, value) => {
     const pathParts = path.split(".");
@@ -231,107 +292,108 @@ const getSavedData = async () => {
     });
   }, []);
 
-const generateJson = async () => {
-  setHasAttemptedSubmit(true);
-  if (!validateForm()) {
-    toast.error("Please fix validation errors before saving");
-    return false;
-  }
+  const generateJson = async () => {
+    setHasAttemptedSubmit(true);
+    if (!validateForm()) {
+      toast.error("Please fix validation errors before saving");
+      return false;
+    }
 
-  setIsLoading(true);
+    setIsLoading(true);
 
-  try {
-    const payload = JSON.parse(JSON.stringify(formData));
-    ["subjects", "labs", "faculty", "rooms", "time_slots.periods"].forEach((key) => {
-      let items = payload;
-      const path = key.split(".");
-      for (let i = 0; i < path.length; i++) items = items[path[i]];
-      if (Array.isArray(items)) items.forEach((i) => delete i._tempId);
-    });
+    try {
+      const payload = JSON.parse(JSON.stringify(formData));
+      ["subjects", "labs", "faculty", "rooms", "time_slots.periods"].forEach((key) => {
+        let items = payload;
+        const path = key.split(".");
+        for (let i = 0; i < path.length; i++) items = items[path[i]];
+        if (Array.isArray(items)) items.forEach((i) => delete i._tempId);
+      });
 
-    const res = await axios.post(
-      `${API_BASE_URL}/timetable/saveData/?course=${courseId}&year=${year}&semester=${semester}`,
-      payload,
-      { withCredentials: true }
-    );
+      const res = await axios.post(
+        `${API_BASE_URL}/timetable/saveData/?course=${courseId}&year=${year}&semester=${semester}`,
+        payload,
+        { withCredentials: true }
+      );
 
-    toast.success("Data saved successfully!");
-    setHasOrganisationData(true);
-    return true;
-  } catch (error) {
-    const errorMessage = error.response?.data?.message || "Error saving data";
-    toast.error(errorMessage);
-    return false;
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-const saveAndGenerate = async () => {
-  setIsLoading(true);
-  try {
-    const ok = await generateJson();
-    if (!ok) {
+      toast.success("Data saved successfully!");
+      setHasOrganisationData(true);
+      return true;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || "Error saving data";
+      toast.error(errorMessage);
+      return false;
+    } finally {
       setIsLoading(false);
-      return;
     }
+  };
 
-    const res = await axios.post(
-      `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}&semester=${semester}`,
-      {},
-      { withCredentials: true }
-    );
+  // Debounced save function
+  const debouncedGenerateJson = useDebouncedCallback(generateJson, 500);
 
-    if (res.data?.data) {
-      toast.success("Generation Successful");
-      navigate(`/dashboard/timetable/variants/${courseId}/${year}/${semester}`);
+  const saveAndGenerate = async () => {
+    setIsLoading(true);
+    try {
+      const ok = await generateJson();
+      if (!ok) {
+        setIsLoading(false);
+        return;
+      }
+
+      const res = await axios.post(
+        `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}&semester=${semester}`,
+        {},
+        { withCredentials: true }
+      );
+
+      if (res.data?.data) {
+        toast.success("Generation Successful");
+        navigate(`/dashboard/timetable/variants/${courseId}/${year}/${semester}`);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Error generating timetable");
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Error generating timetable");
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
-const resetForm = async () => {
-  if (!window.confirm("Are you sure? This cannot be undone.")) return;
+  const resetForm = async () => {
+    if (!window.confirm("Are you sure? This cannot be undone.")) return;
 
-  setIsLoading(true);
+    setIsLoading(true);
 
-  try {
-    const res = await axios.delete(
-      `${API_BASE_URL}/organisation/resetData`,
-      { withCredentials: true }
-    );
-    if (res.data.success) {
-      setFormData(initialFormData);
-      setHasOrganisationData(false);
-      toast.info("Form has been reset");
+    try {
+      const res = await axios.delete(
+        `${API_BASE_URL}/organisation/resetData`,
+        { withCredentials: true }
+      );
+      if (res.data.success) {
+        setFormData(initialFormData);
+        setHasOrganisationData(false);
+        toast.info("Form has been reset");
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Error resetting");
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Error resetting");
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const btnBase =
     "px-4 py-2 rounded-md font-semibold text-sm transition-colors duration-200 w-full md:w-auto";
-  const btnPrimary = `${btnBase} bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300`;
+  const btnPrimary = `${btnBase} bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed`;
   const btnSecondary = `${btnBase} bg-gray-600 text-white hover:bg-gray-700 disabled:bg-gray-400`;
   const btnSuccess = `${btnBase} bg-green-500 text-white hover:bg-green-600`;
   const btnDanger = `${btnBase} bg-red-500 text-white hover:bg-red-600`;
 
-  // Helper function to check if field should show error
   const shouldShowError = (fieldPath) => {
     return hasAttemptedSubmit && errors[fieldPath];
   };
 
   const ArrayInput = React.memo(({ section, fields, data, errorKey }) => {
     return (
-
       <div className="space-y-4">
-            <GlobalLoader show={isLoading} />
+        <GlobalLoader show={isLoading} />
         {data.map((item, index) => (
           <div
             key={item._tempId || index}
@@ -497,7 +559,7 @@ const resetForm = async () => {
                   }`}
                   value={formData.college_info.name}
                   onChange={(e) =>
-                    handleInputChange("college_info", "name", e.target.value)
+                    handleInputChangeImmediate("college_info", "name", e.target.value)
                   }
                   placeholder="Enter college name"
                 />
@@ -520,7 +582,7 @@ const resetForm = async () => {
                   }`}
                   value={formData.college_info.session}
                   onChange={(e) =>
-                    handleInputChange("college_info", "session", e.target.value)
+                    handleInputChangeImmediate("college_info", "session", e.target.value)
                   }
                   placeholder="e.g., 2024-2025"
                 />
@@ -541,7 +603,7 @@ const resetForm = async () => {
                   }`}
                   value={formData.college_info.effective_date}
                   onChange={(e) =>
-                    handleInputChange(
+                    handleInputChangeImmediate(
                       "college_info",
                       "effective_date",
                       e.target.value
@@ -1697,21 +1759,21 @@ const resetForm = async () => {
             type="button"
             className={btnSecondary}
             onClick={resetForm}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading}
           >
             Reset Form
           </button>
           <button
             className={btnPrimary}
             onClick={generateJson}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading}
           >
             {isSubmitting ? "Saving..." : "Save For Generation"}
           </button>
           <button
             className={btnPrimary}
             onClick={saveAndGenerate}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading}
           >
             {isSubmitting ? "Generating..." : "Save and Generate"}
           </button>

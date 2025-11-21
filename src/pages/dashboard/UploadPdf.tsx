@@ -32,9 +32,6 @@ const UploadPdf = () => {
 
   const fileInputRef = useRef();
 
-  // -----------------------------
-  // File Selection
-  // -----------------------------
   const handleFileChange = (e) => {
     const picked = e.target.files?.[0];
     if (!picked) return;
@@ -48,9 +45,7 @@ const UploadPdf = () => {
     setResult(null);
   };
 
-  // -----------------------------
-  // Drag & Drop
-  // -----------------------------
+
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -74,9 +69,7 @@ const UploadPdf = () => {
     setResult(null);
   };
 
-  // -------------------------------------------------
-  // UPLOAD + DEBOUNCING (1.5 sec lock)
-  // -------------------------------------------------
+
   const handleUpload = async (e) => {
     e.preventDefault();
 
