@@ -23,9 +23,7 @@ const useDebounce = (value: any, delay: number) => {
   return debouncedValue;
 };
 
-// ---------------------------
-// ⭐ Debounced Callback Hook
-// ---------------------------
+
 const useDebouncedCallback = (callback: Function, delay: number) => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
