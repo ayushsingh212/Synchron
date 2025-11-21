@@ -12,6 +12,8 @@ const OrganisationDataTaker = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   const navigate = useNavigate();
   const {hasOrganisationData,setHasOrganisationData} = useAppState()
 
@@ -53,23 +55,22 @@ const OrganisationDataTaker = () => {
   };
 
   const [formData, setFormData] = useState(initialFormData);
+const getSavedData = async () => {
+  try {
+    setIsLoading(true);
+    const savedData = await axios.get(
+      `${API_BASE_URL}/organisation/getOrganisationSavedData?year=${year}&course=${courseId}&semester=${semester}`,
+      { withCredentials: true }
+    );
+    setFormData(savedData.data?.data || initialFormData);
+    setHasOrganisationData(true);
+  } catch (error) {
+    console.log("Old data fetch failed", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  const getSavedData = async () => {
-    try {
-      console.log("Here is the year and course",year,courseId)
-      const savedData = await axios.get(
-`${API_BASE_URL}/organisation/getOrganisationSavedData?year=${year}&course=${courseId}&semester=${semester}`,
-        {
-          withCredentials: true,
-        }
-      );
-   
-      setFormData(savedData.data?.data || initialFormData);
-      setHasOrganisationData(true)
-    } catch (error) {
-      console.log("Old data fetch failed", error);
-    }
-  };
 
   const validateForm = useCallback(() => {
     const newErrors = {};
@@ -156,6 +157,15 @@ const OrganisationDataTaker = () => {
     });
   }, []);
 
+  const GlobalLoader = ({ show }: { show: boolean }) => {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-[9999]">
+      <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+};
+
   const handleItemChange = useCallback((path, index, field, value) => {
     const pathParts = path.split(".");
     setFormData((prev) => {
@@ -221,114 +231,90 @@ const OrganisationDataTaker = () => {
     });
   }, []);
 
-  const generateJson = async () => {
-    setHasAttemptedSubmit(true);
-    if (!validateForm()) {
-      toast.error("Please fix validation errors before saving");
+const generateJson = async () => {
+  setHasAttemptedSubmit(true);
+  if (!validateForm()) {
+    toast.error("Please fix validation errors before saving");
+    return false;
+  }
+
+  setIsLoading(true);
+
+  try {
+    const payload = JSON.parse(JSON.stringify(formData));
+    ["subjects", "labs", "faculty", "rooms", "time_slots.periods"].forEach((key) => {
+      let items = payload;
+      const path = key.split(".");
+      for (let i = 0; i < path.length; i++) items = items[path[i]];
+      if (Array.isArray(items)) items.forEach((i) => delete i._tempId);
+    });
+
+    const res = await axios.post(
+      `${API_BASE_URL}/timetable/saveData/?course=${courseId}&year=${year}&semester=${semester}`,
+      payload,
+      { withCredentials: true }
+    );
+
+    toast.success("Data saved successfully!");
+    setHasOrganisationData(true);
+    return true;
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || "Error saving data";
+    toast.error(errorMessage);
+    return false;
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+const saveAndGenerate = async () => {
+  setIsLoading(true);
+  try {
+    const ok = await generateJson();
+    if (!ok) {
+      setIsLoading(false);
       return;
     }
-    setIsSubmitting(true);
-    try {
-      const payload = JSON.parse(JSON.stringify(formData));
-      ["subjects", "labs", "faculty", "rooms", "time_slots.periods"].forEach(
-        (key) => {
-          let items = payload;
-          const path = key.split(".");
-          for (let i = 0; i < path.length; i++) {
-            items = items[path[i]];
-          }
-          if (Array.isArray(items)) {
-            items.forEach((item) => delete item._tempId);
-          }
-        }
-      );
 
-      const res = await axios.post(
-        `${API_BASE_URL}/timetable/saveData/?course=${courseId}&year=${year}&semester=${semester}`,
-        payload,
-        {
-          withCredentials: true,
-        }
-      );
+    const res = await axios.post(
+      `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}&semester=${semester}`,
+      {},
+      { withCredentials: true }
+    );
 
-      toast.success("Data saved successfully!");
-      setHasOrganisationData(true)
-      // Navigate to faculty timetable after successful save
-      return true;
-    } catch (error) {
-      console.error("Error while saving to the Database", error);
-      const errorMessage =
-        error.response?.data?.message || error.message || "Error saving data";
-      toast.error(`Error: ${errorMessage}`);
-    } finally {
-      setIsSubmitting(false);
+    if (res.data?.data) {
+      toast.success("Generation Successful");
+      navigate(`/dashboard/timetable/variants/${courseId}/${year}/${semester}`);
     }
-  };
-  const saveAndGenerate = async () => {
-    try {
-     const isDataSaved = await generateJson()
-     setIsGenerating(true)
-       
-     if(!isDataSaved)
-     {
-      toast.error("No data saved yet to start generation")
-     }
-      const res = await axios.post(
-        `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}&semester=${semester}`,
-        {},
-        { withCredentials: true }
-      );
-    
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Error generating timetable");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-      if (res.data?.data) {
-        setHasOrganisationData(true)
-        toast.success("Generation Successfull");
-        navigate('/dashboard/timetables');
-      } else {
-         setHasOrganisationData(false)
-      }
-    } catch (error) {
-      console.error(
-        "Error while fetching timetables:",
-        error.response?.data || error.message
-      );
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-  const resetForm = async () => {
-    if (
-      window.confirm(
-        "Are you sure you want to reset all data? This action cannot be undone."
-      )
-    ){ 
-      try{
-          setIsSubmitting(true)
-       const res = await axios.delete(
-        `${API_BASE_URL}/organisation/resetData`,
-        {
-          withCredentials: true,
-        }
-      );
-   
-      if(res.data.success)
-      {
-          setFormData(initialFormData);
-          setHasOrganisationData(false)
-      }
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || error.message || "Error saving data";
-      toast.error(`Error: ${errorMessage}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  
-      setHasAttemptedSubmit(false);
+const resetForm = async () => {
+  if (!window.confirm("Are you sure? This cannot be undone.")) return;
+
+  setIsLoading(true);
+
+  try {
+    const res = await axios.delete(
+      `${API_BASE_URL}/organisation/resetData`,
+      { withCredentials: true }
+    );
+    if (res.data.success) {
+      setFormData(initialFormData);
+      setHasOrganisationData(false);
       toast.info("Form has been reset");
     }
-    return;
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Error resetting");
+  } finally {
+    setIsLoading(false);
   }
+};
+
   const btnBase =
     "px-4 py-2 rounded-md font-semibold text-sm transition-colors duration-200 w-full md:w-auto";
   const btnPrimary = `${btnBase} bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300`;
@@ -343,7 +329,9 @@ const OrganisationDataTaker = () => {
 
   const ArrayInput = React.memo(({ section, fields, data, errorKey }) => {
     return (
+
       <div className="space-y-4">
+            <GlobalLoader show={isLoading} />
         {data.map((item, index) => (
           <div
             key={item._tempId || index}
