@@ -9,7 +9,7 @@ const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmNewPassword, setconfirmNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSendOtp = async () => {
@@ -19,6 +19,8 @@ const ForgotPassword: React.FC = () => {
       setLoading(true);
       await axios.post(`${API_BASE_URL}/verification/getOtp/reset-password`, {
         organisationEmail: email,
+      },{
+        withCredentials:true
       });
       toast.success("OTP sent to your email");
       setStep(2);
@@ -39,6 +41,8 @@ const ForgotPassword: React.FC = () => {
         organisationEmail: email,
         otp,
         purpose:"reset-password"
+      },{
+        withCredentials:true
       });
       toast.success("OTP verified");
       setStep(3);
@@ -51,17 +55,19 @@ const ForgotPassword: React.FC = () => {
 
  
   const handleResetPassword = async () => {
-    if (!newPassword || !confirmPassword)
+    if (!newPassword || !confirmNewPassword)
       return toast.error("All fields are required");
 
-    if (newPassword !== confirmPassword)
+    if (newPassword !== confirmNewPassword)
       return toast.error("Passwords do not match");
 
     try {
       setLoading(true);
       await axios.post(`${API_BASE_URL}/password-reset/reset-password`, {
-        organisationEmail: email,
         newPassword,
+        confirmNewPassword,
+      },{
+        withCredentials:true
       });
       toast.success("Password reset successful!");
       setTimeout(() => {
@@ -159,8 +165,8 @@ const ForgotPassword: React.FC = () => {
                 type="password"
                 placeholder="Confirm new password"
                 className="w-full mt-1 pl-10 px-3 py-2 border rounded-lg"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                value={confirmNewPassword}
+                onChange={(e) => setconfirmNewPassword(e.target.value)}
               />
             </div>
 
