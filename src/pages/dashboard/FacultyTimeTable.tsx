@@ -210,13 +210,13 @@ const fetchSavedTimetable = async () => {
           `Timetable for ${faculty.faculty_name} (${faculty.department})`,
         ]);
         worksheet.addRow([`Generated on ${new Date().toLocaleDateString()}`]);
-        worksheet.addRow([]); // Empty row for spacing
+        worksheet.addRow([]);
 
-        // Create header row
+       
         const headerRow = ["Time", ...days];
         worksheet.addRow(headerRow);
 
-        // Style header row
+        
         const headerFont = { bold: true, color: { argb: "FFFFFFFF" } };
         headerRow.forEach((_, colIndex) => {
           const cell = worksheet.getCell(4, colIndex + 1);
@@ -228,7 +228,6 @@ const fetchSavedTimetable = async () => {
           cell.font = headerFont;
         });
 
-        // Add timetable data
         Object.entries(faculty.periods).forEach(([periodNum, time]) => {
           const row = [time];
 
@@ -248,7 +247,7 @@ const fetchSavedTimetable = async () => {
 
       
         worksheet.columns = [
-          { width: 10 }, // Time column
+          { width: 10 }, 
           ...days.map(() => ({ width: 25 })), 
         ];
       });

@@ -46,6 +46,7 @@ import AcademicDataPage from "./pages/AcademicDataPage";
 import ForgotPassword from "./pages/ForgotPassword"
 import VariantListPage from "./pages/VariantListPage";
 import VariantViewerPage from "./pages/VariantViewerPage";
+import FacultyDashboard from "./pages/dashboard/Faculty/FacultyDashboard";
 
 
 const router = createBrowserRouter(
@@ -64,6 +65,7 @@ const router = createBrowserRouter(
       <Route path="forgot-password" element={<ForgotPassword />}></Route>
       {/* Access Denied */}
       <Route path="access-denied" element={<AccessDenied />} />
+      <Route path="Faculty" element={<FacultyDashboard />} />
 
       {/* Dashboard (Protected) */}
       <Route
