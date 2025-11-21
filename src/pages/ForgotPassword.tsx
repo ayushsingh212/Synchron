@@ -17,7 +17,7 @@ const ForgotPassword: React.FC = () => {
 
     try {
       setLoading(true);
-      await axios.post(`${API_BASE_URL}/password-reset/forgot-password`, {
+      await axios.post(`${API_BASE_URL}/verification/getOtp/reset-password`, {
         organisationEmail: email,
       });
       toast.success("OTP sent to your email");
@@ -35,9 +35,10 @@ const ForgotPassword: React.FC = () => {
 
     try {
       setLoading(true);
-      await axios.post(`${API_BASE_URL}/password-reset/verify-otp`, {
+      await axios.post(`${API_BASE_URL}/verification/verifyOtp`, {
         organisationEmail: email,
         otp,
+        purpose:"reset-password"
       });
       toast.success("OTP verified");
       setStep(3);
