@@ -43,6 +43,7 @@ import StateContextProvider from "./config";
 import CourseSelection from "./pages/CourseSelection";
 import YearSelection from "./pages/YearSelection";
 import AcademicDataPage from "./pages/AcademicDataPage";
+import ForgotPassword from "./pages/ForgotPassword"
 
 
 const router = createBrowserRouter(
@@ -58,7 +59,7 @@ const router = createBrowserRouter(
 
       {/* Email Verification */}
       <Route path="verify-email/:organisationEmail" element={<VerifyEmail />} />
-
+      <Route path="forgot-password" element={<ForgotPassword />}></Route>
       {/* Access Denied */}
       <Route path="access-denied" element={<AccessDenied />} />
 

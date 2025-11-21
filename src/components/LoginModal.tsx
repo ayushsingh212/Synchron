@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { Mail, Lock, Hash, X } from "lucide-react";
 import Modal from "./Modal";
 import { useNavigate } from "react-router-dom";
+import ForgetModal from "./ForgotModal.tsx"; 
 
 interface Props {
   open: boolean;
@@ -131,6 +132,16 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
                 className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                onClose(); 
+                navigate("/forgot-password");
+              }}
+              className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition"
+            >
+              Forgot Password?
+            </button>
           </>
         ) : (
           <>
