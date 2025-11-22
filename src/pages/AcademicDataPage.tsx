@@ -1,52 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { API_BASE_URL, useAppState } from "../config";
+import { API_BASE_URL,useAppState } from "../config";
+
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
-
-
-const useDebounce = (value: any, delay: number) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-};
-
-
-const useDebouncedCallback = (callback: Function, delay: number) => {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const debouncedFunction = useCallback(
-    (...args: any[]) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      timeoutRef.current = setTimeout(() => {
-        callback(...args);
-      }, delay);
-    },
-    [callback, delay]
-  );
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  return debouncedFunction;
-};
+import { PiPlaceholder } from "react-icons/pi";
 
 const OrganisationDataTaker = () => {
   const [activeTab, setActiveTab] = useState("college");
@@ -58,11 +16,12 @@ const OrganisationDataTaker = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const navigate = useNavigate();
-  const { hasOrganisationData, setHasOrganisationData } = useAppState();
+  const {hasOrganisationData,setHasOrganisationData} = useAppState()
 
-  const { courseId, year, semester } = useParams();
+  
+  const {courseId,year,semester} = useParams()
 
-  const defaultTemplates = useMemo(() => ({
+  const defaultTemplates = {
     department: { dept_id: "", name: "", sections: [] },
     section: {
       section_id: "",
@@ -72,19 +31,21 @@ const OrganisationDataTaker = () => {
       room: "",
       student_count: "",
       coordinator: "",
+      specialization: "",
     },
-    subject: { subject_id: "", name: "", credits: 0, department: "" },
-    lab: { lab_id: "", name: "", department: "", room: "" },
-    faculty: { faculty_id: "", name: "", department: "", email: "" },
-    room: { room_id: "", name: "", capacity: 0, type: "classroom" },
+    subject: { subject_id: "", name: "", credits: 0, department: "" , type: "", semester: "", lectures_per_week: "" , min_classes_per_week: "", max_classes_per_day: ""},
+    lab: { lab_id: "", name: "", department: "", lab_room: "" , credits: "" ,  sessions_per_week : "",
+      duration_hours : "", semester: ""},
+    faculty: { faculty_id: "", name: "", department: "", designation: "" , subjects: "", max_hours_per_week : "" , avg_leaves_per_month: "" },
+    room: { room_id: "", name: "", capacity: 0, type: "classroom" , department: ""},
     period: { id: null, start_time: "", end_time: "" },
-  }), []);
+  };
 
-  const initialFormData = useMemo(() => ({
+  const initialFormData = {
     college_info: { name: "", session: "", effective_date: "" },
     time_slots: {
       periods: [],
-      working_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      working_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], 
       break_periods: [],
       lunch_period: null,
       mentorship_period: null,
@@ -94,27 +55,25 @@ const OrganisationDataTaker = () => {
     labs: [],
     faculty: [],
     rooms: [],
-  }), []);
+  };
 
   const [formData, setFormData] = useState(initialFormData);
+const getSavedData = async () => {
+  try {
+    setIsLoading(true);
+    const savedData = await axios.get(
+      `${API_BASE_URL}/organisation/getOrganisationSavedData?year=${year}&course=${courseId}&semester=${semester}`,
+      { withCredentials: true }
+    );
+    setFormData(savedData.data?.data || initialFormData);
+    setHasOrganisationData(true);
+  } catch (error) {
+    console.log("Old data fetch failed", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  const debouncedFormData = useDebounce(formData, 500);
-
-  const getSavedData = async () => {
-    try {
-      setIsLoading(true);
-      const savedData = await axios.get(
-        `${API_BASE_URL}/organisation/getOrganisationSavedData?year=${year}&course=${courseId}&semester=${semester}`,
-        { withCredentials: true }
-      );
-      setFormData(savedData.data?.data || initialFormData);
-      setHasOrganisationData(true);
-    } catch (error) {
-      console.log("Old data fetch failed", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const validateForm = useCallback(() => {
     const newErrors = {};
@@ -148,7 +107,7 @@ const OrganisationDataTaker = () => {
           dept.sections.forEach((section, secIndex) => {
             if (!section.section_id || !section.name) {
               newErrors[`section_${deptIndex}_${secIndex}`] =
-                "Section ID and name are required";
+                "Section ID and name are requir ed";
             }
           });
         }
@@ -174,26 +133,14 @@ const OrganisationDataTaker = () => {
     setForm();
   }, []);
 
-  // Validate using debounced form data
+  // Only validate when user has attempted to submit
   useEffect(() => {
     if (hasAttemptedSubmit) {
       validateForm();
     }
-  }, [debouncedFormData, hasAttemptedSubmit, validateForm]);
+  }, [formData, hasAttemptedSubmit, validateForm]);
 
-  // Debounced input change handler
-  const handleInputChange = useDebouncedCallback(
-    (section: string, field: string, value: any) => {
-      setFormData((prev) => ({
-        ...prev,
-        [section]: { ...prev[section], [field]: value },
-      }));
-    },
-    300
-  );
-
-  // Immediate state update for controlled inputs
-  const handleInputChangeImmediate = (section: string, field: string, value: any) => {
+  const handleInputChange = (section, field, value) => {
     setFormData((prev) => ({
       ...prev,
       [section]: { ...prev[section], [field]: value },
@@ -214,13 +161,13 @@ const OrganisationDataTaker = () => {
   }, []);
 
   const GlobalLoader = ({ show }: { show: boolean }) => {
-    if (!show) return null;
-    return (
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-[9999]">
-        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  };
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-[9999]">
+      <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+};
 
   const handleItemChange = useCallback((path, index, field, value) => {
     const pathParts = path.split(".");
@@ -287,108 +234,107 @@ const OrganisationDataTaker = () => {
     });
   }, []);
 
-  const generateJson = async () => {
-    setHasAttemptedSubmit(true);
-    if (!validateForm()) {
-      toast.error("Please fix validation errors before saving");
-      return false;
-    }
+const generateJson = async () => {
+  setHasAttemptedSubmit(true);
+  if (!validateForm()) {
+    toast.error("Please fix validation errors before saving");
+    return false;
+  }
 
-    setIsLoading(true);
+  setIsLoading(true);
 
-    try {
-      const payload = JSON.parse(JSON.stringify(formData));
-      ["subjects", "labs", "faculty", "rooms", "time_slots.periods"].forEach((key) => {
-        let items = payload;
-        const path = key.split(".");
-        for (let i = 0; i < path.length; i++) items = items[path[i]];
-        if (Array.isArray(items)) items.forEach((i) => delete i._tempId);
-      });
+  try {
+    const payload = JSON.parse(JSON.stringify(formData));
+    ["subjects", "labs", "faculty", "rooms", "time_slots.periods"].forEach((key) => {
+      let items = payload;
+      const path = key.split(".");
+      for (let i = 0; i < path.length; i++) items = items[path[i]];
+      if (Array.isArray(items)) items.forEach((i) => delete i._tempId);
+    });
 
-      const res = await axios.post(
-        `${API_BASE_URL}/timetable/saveData/?course=${courseId}&year=${year}&semester=${semester}`,
-        payload,
-        { withCredentials: true }
-      );
+    const res = await axios.post(
+      `${API_BASE_URL}/timetable/saveData/?course=${courseId}&year=${year}&semester=${semester}`,
+      payload,
+      { withCredentials: true }
+    );
 
-      toast.success("Data saved successfully!");
-      setHasOrganisationData(true);
-      return true;
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || "Error saving data";
-      toast.error(errorMessage);
-      return false;
-    } finally {
+    toast.success("Data saved successfully!");
+    setHasOrganisationData(true);
+    return true;
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || "Error saving data";
+    toast.error(errorMessage);
+    return false;
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+const saveAndGenerate = async () => {
+  setIsLoading(true);
+  try {
+    const ok = await generateJson();
+    if (!ok) {
       setIsLoading(false);
+      return;
     }
-  };
 
-  // Debounced save function
-  const debouncedGenerateJson = useDebouncedCallback(generateJson, 500);
+    const res = await axios.post(
+      `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}&semester=${semester}`,
+      {},
+      { withCredentials: true }
+    );
 
-  const saveAndGenerate = async () => {
-    setIsLoading(true);
-    try {
-      const ok = await generateJson();
-      if (!ok) {
-        setIsLoading(false);
-        return;
-      }
-
-      const res = await axios.post(
-        `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}&semester=${semester}`,
-        {},
-        { withCredentials: true }
-      );
-
-      if (res.data?.data) {
-        toast.success("Generation Successful");
-        navigate(`/dashboard/timetable/variants/${courseId}/${year}/${semester}`);
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Error generating timetable");
-    } finally {
-      setIsLoading(false);
+    if (res.data?.data) {
+      toast.success("Generation Successful");
+      navigate(`/dashboard/timetable/variants/${courseId}/${year}/${semester}`);
     }
-  };
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Error generating timetable");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  const resetForm = async () => {
-    if (!window.confirm("Are you sure? This cannot be undone.")) return;
+const resetForm = async () => {
+  if (!window.confirm("Are you sure? This cannot be undone.")) return;
 
-    setIsLoading(true);
+  setIsLoading(true);
 
-    try {
-      const res = await axios.delete(
-        `${API_BASE_URL}/organisation/resetData`,
-        { withCredentials: true }
-      );
-      if (res.data.success) {
-        setFormData(initialFormData);
-        setHasOrganisationData(false);
-        toast.info("Form has been reset");
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Error resetting");
-    } finally {
-      setIsLoading(false);
+  try {
+    const res = await axios.delete(
+      `${API_BASE_URL}/organisation/resetData`,
+      { withCredentials: true }
+    );
+    if (res.data.success) {
+      setFormData(initialFormData);
+      setHasOrganisationData(false);
+      toast.info("Form has been reset");
     }
-  };
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Error resetting");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const btnBase =
     "px-4 py-2 rounded-md font-semibold text-sm transition-colors duration-200 w-full md:w-auto";
-  const btnPrimary = `${btnBase} bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed`;
+  const btnPrimary = `${btnBase} bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300`;
   const btnSecondary = `${btnBase} bg-gray-600 text-white hover:bg-gray-700 disabled:bg-gray-400`;
   const btnSuccess = `${btnBase} bg-green-500 text-white hover:bg-green-600`;
   const btnDanger = `${btnBase} bg-red-500 text-white hover:bg-red-600`;
 
+  // Helper function to check if field should show error
   const shouldShowError = (fieldPath) => {
     return hasAttemptedSubmit && errors[fieldPath];
   };
 
   const ArrayInput = React.memo(({ section, fields, data, errorKey }) => {
     return (
+
       <div className="space-y-4">
-        <GlobalLoader show={isLoading} />
+            <GlobalLoader show={isLoading} />
         {data.map((item, index) => (
           <div
             key={item._tempId || index}
@@ -554,7 +500,7 @@ const OrganisationDataTaker = () => {
                   }`}
                   value={formData.college_info.name}
                   onChange={(e) =>
-                    handleInputChangeImmediate("college_info", "name", e.target.value)
+                    handleInputChange("college_info", "name", e.target.value)
                   }
                   placeholder="Enter college name"
                 />
@@ -577,7 +523,7 @@ const OrganisationDataTaker = () => {
                   }`}
                   value={formData.college_info.session}
                   onChange={(e) =>
-                    handleInputChangeImmediate("college_info", "session", e.target.value)
+                    handleInputChange("college_info", "session", e.target.value)
                   }
                   placeholder="e.g., 2024-2025"
                 />
@@ -598,7 +544,7 @@ const OrganisationDataTaker = () => {
                   }`}
                   value={formData.college_info.effective_date}
                   onChange={(e) =>
-                    handleInputChangeImmediate(
+                    handleInputChange(
                       "college_info",
                       "effective_date",
                       e.target.value
@@ -1097,6 +1043,11 @@ const OrganisationDataTaker = () => {
                                 label: "Coordinator",
                                 type: "text",
                               },
+                              {
+                                name: "specialization",
+                                label: "Specialization",
+                                type: "text",
+                              },
                             ].map((field) => (
                               <div key={field.name}>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1310,6 +1261,121 @@ const OrganisationDataTaker = () => {
                           placeholder="e.g., CS"
                         />
                       </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Type [Theory or Practical] <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`subject_${subjectIndex}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={subject.type}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "subjects",
+                              subjectIndex,
+                              "type",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g., Introduction to Programming"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Semester <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`subject_${subjectIndex}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={subject.semester}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "subjects",
+                              subjectIndex,
+                              "semester",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g. 3"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Lecture Per Week <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`subject_${subjectIndex}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={subject.lectures_per_week}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "subjects",
+                              subjectIndex,
+                              "lectures_per_week",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g. 5"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Minimun Classes Per Week <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`subject_${subjectIndex}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={subject.min_classes_per_week}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "subjects",
+                              subjectIndex,
+                              "min_classes_per_week",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g. 5"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Maximum Classes Per Day <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`subject_${subjectIndex}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={subject.max_classes_per_day}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "subjects",
+                              subjectIndex,
+                              "max_classes_per_day",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g. 5"
+                        />
+                      </div>
                     </div>
                     {shouldShowError(`subject_${subjectIndex}`) && (
                       <p className="text-red-500 text-xs mt-1 mb-2">
@@ -1435,16 +1501,108 @@ const OrganisationDataTaker = () => {
                               ? "border-red-500"
                               : "border-gray-300"
                           }`}
-                          value={lab.room}
+                          value={lab.lab_room}
                           onChange={(e) =>
                             handleItemChange(
                               "labs",
                               labIndex,
-                              "room",
+                              "lab_room",
                               e.target.value
                             )
                           }
                           placeholder="e.g., Room 302"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Credits <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`lab_${labIndex}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={lab.credits}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "labs",
+                              labIndex,
+                              "credits",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g., Room 302"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Session Per Week <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`lab_${labIndex}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={lab.sessions_per_week}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "labs",
+                              labIndex,
+                              "sessions_per_week",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g., Room 302"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Duration <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`lab_${labIndex}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={lab.duration_hours}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "labs",
+                              labIndex,
+                              "duration_hours",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g. Time in Hours ..2"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Semester <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`lab_${labIndex}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={lab.semester}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "labs",
+                              labIndex,
+                              "semester",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g. 3"
                         />
                       </div>
                     </div>
@@ -1562,7 +1720,7 @@ const OrganisationDataTaker = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Email <span className="text-red-500">*</span>
+                          Designation <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="email"
@@ -1571,16 +1729,85 @@ const OrganisationDataTaker = () => {
                               ? "border-red-500"
                               : "border-gray-300"
                           }`}
-                          value={member.email}
+                          value={member.designation}
                           onChange={(e) =>
                             handleItemChange(
                               "faculty",
                               index,
-                              "email",
+                              "designation",
                               e.target.value
                             )
                           }
-                          placeholder="e.g., jane.doe@college.edu"
+                          placeholder="e.g., Assistance Professor"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Subjects <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`faculty_${index}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={member.designation}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "faculty",
+                              index,
+                              "designation",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g., BCS 301"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Maximum Hour Per Week <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`faculty_${index}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={member.max_hours_per_week}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "faculty",
+                              index,
+                              "max_hours_per_week",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g., 20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Average Leaves Per Month<span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`faculty_${index}`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={member.avg_leaves_per_month}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "faculty",
+                              index,
+                              "avg_leaves_per_month",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g., 2"
                         />
                       </div>
                     </div>
@@ -1695,6 +1922,29 @@ const OrganisationDataTaker = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Department <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                                type="text"
+                                className={`w-full px-3 py-2 border rounded-md ${
+                                  shouldShowError(`room_${index}`)
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                }`}
+                                value={room.department} 
+                                onChange={(e) =>
+                                  handleItemChange(
+                                    "rooms",
+                                    index,
+                                    "department",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="e.g., Computer Science"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Type <span className="text-red-500">*</span>
                         </label>
                         <select
@@ -1754,21 +2004,21 @@ const OrganisationDataTaker = () => {
             type="button"
             className={btnSecondary}
             onClick={resetForm}
-            disabled={isSubmitting || isLoading}
+            disabled={isSubmitting}
           >
             Reset Form
           </button>
           <button
             className={btnPrimary}
             onClick={generateJson}
-            disabled={isSubmitting || isLoading}
+            disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Save For Generation"}
           </button>
           <button
             className={btnPrimary}
             onClick={saveAndGenerate}
-            disabled={isSubmitting || isLoading}
+            disabled={isSubmitting}
           >
             {isSubmitting ? "Generating..." : "Save and Generate"}
           </button>
