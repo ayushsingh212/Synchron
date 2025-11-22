@@ -57,7 +57,7 @@ const Navbar: React.FC = () => {
       <header className="w-full bg-gradient-to-r from-blue-50 via-white to-blue-50 text-blue-600 border-b border-blue-200 shadow-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 md:px-12 py-4">
           <h1 className="text-xl md:text-2xl font-bold tracking-tight">
-            <Link to={"/"}>Timetable Scheduler</Link>
+            <Link to={"/"}>AiCrona</Link>
           </h1>
 
           <nav className="flex items-center gap-6 text-sm md:text-base font-semibold">
