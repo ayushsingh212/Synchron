@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { Mail, Lock, Hash, X } from "lucide-react";
 import Modal from "./Modal";
 import { useNavigate } from "react-router-dom";
-
+import { useOrganisation } from "../context/OrganisationContext";
 
 const useDebounce = (callback: Function, delay: number) => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -21,7 +21,6 @@ const useDebounce = (callback: Function, delay: number) => {
     },
     [callback, delay]
   );
-
 
   useEffect(() => {
     return () => {
@@ -44,6 +43,9 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
+  
+ 
+  const { getOrganisation } = useOrganisation();
 
   const [formData, setFormData] = useState({
     organisationEmailOrorganisationContactNumber: "",
@@ -52,7 +54,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
     otp: "",
   });
 
-  
   const requestOtp = async () => {
     try {
       if (!formData.organisationEmail) {
@@ -60,7 +61,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
         return;
       }
 
-     
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.organisationEmail)) {
         toast.error("Please enter a valid email address");
@@ -83,18 +83,14 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
     }
   };
 
-  
   const debouncedRequestOtp = useDebounce(requestOtp, 1500);
 
-  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  
   const submitForm = async () => {
     try {
-
       if (loginMethod === "password") {
         if (!formData.organisationEmailOrorganisationContactNumber) {
           toast.error("Please enter email or contact number");
@@ -116,14 +112,23 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
       }
 
       setLoading(true);
-      await axios.post(`${API_BASE_URL}/organisation/login`, formData, {
-        withCredentials: true,
-      });
+      
+      // Login request
+      await axios.post(
+        `${API_BASE_URL}/organisation/login`, 
+        formData, 
+        { withCredentials: true }
+      );
 
       toast.success("Login successful");
 
+     
+      await getOrganisation();
+
       window.dispatchEvent(new CustomEvent("close-both-modal"));
+      
       navigate("/dashboard/organisation-info");
+      
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Login failed");
     } finally {
@@ -136,11 +141,10 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!loading) {
-      submitForm(); 
+      submitForm();
     }
   };
 
- 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -149,7 +153,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
-  
   useEffect(() => {
     if (!open) {
       setFormData({
@@ -177,7 +180,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
         Organisation Login
       </h2>
 
-     
       <div className="flex bg-blue-50 rounded-xl p-1 mb-8 border border-blue-200">
         <button
           type="button"
@@ -204,11 +206,9 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
         </button>
       </div>
 
-      {/* Login Form */}
       <form className="space-y-6" onSubmit={handleSubmit}>
         {loginMethod === "password" ? (
           <>
-            
             <div className="relative">
               <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
               <input
@@ -222,7 +222,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
               />
             </div>
 
-           
             <div className="relative">
               <Lock className="absolute left-4 top-3.5 text-blue-600 h-5" />
               <input
@@ -236,7 +235,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
               />
             </div>
 
-          
             <button
               type="button"
               onClick={() => {
@@ -250,7 +248,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
           </>
         ) : (
           <>
-            
             <div className="relative">
               <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
               <input
@@ -264,7 +261,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
               />
             </div>
 
-            
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Hash className="absolute left-4 top-3.5 text-blue-600 h-5" />
@@ -280,7 +276,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
                 />
               </div>
 
-              
               <button
                 type="button"
                 onClick={() => debouncedRequestOtp()}
@@ -293,7 +288,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
           </>
         )}
 
-       
         <button
           type="submit"
           disabled={loading}
@@ -307,7 +301,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
         </button>
       </form>
 
-     
       <p className="text-center mt-6 text-blue-600 text-sm">
         Don't have an account?
         <button

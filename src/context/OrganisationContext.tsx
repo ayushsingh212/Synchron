@@ -1,8 +1,6 @@
-import { useState, createContext, useContext, useCallback } from "react";
+import { useState, createContext, useContext, useCallback, useEffect } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
-
-
 
 export interface OrganisationType {
   _id?: string;
@@ -11,29 +9,24 @@ export interface OrganisationType {
   type?: string;
   avatar?: string;
   contactNumber?: string;
-  [key: string]: any;   
+  [key: string]: any;
 }
 
 export interface OrganisationContextType {
   organisation: OrganisationType | null;
   setOrganisation: (org: OrganisationType | null) => void;
   getOrganisation: () => Promise<OrganisationType | null>;
+  isLoading: boolean;
+  currentlyViewedTimtable: any[];
+  setCurrentlyViewedTimtable: (v: any[]) => void;
 }
 
+export const OrganisationContext = createContext<OrganisationContextType | undefined>(undefined);
 
-
-export const OrganisationContext = createContext<OrganisationContextType | undefined>(
-  undefined
-);
-
-
-
-export const OrganisationProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const OrganisationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [organisation, setOrganisation] = useState<OrganisationType | null>(null);
-
-  const [currentlyViewedTimtable, setCurrentlyViewedTimtable] = useState([])
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentlyViewedTimtable, setCurrentlyViewedTimtable] = useState([]);
 
   const getOrganisation = useCallback(async (): Promise<OrganisationType | null> => {
     try {
@@ -42,14 +35,22 @@ export const OrganisationProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       const data = res.data?.data || null;
-      setOrganisation(data);  
+      setOrganisation(data);
 
       return data;
     } catch (error) {
-      console.error("Error fetching organisation:", error);
+      setOrganisation(null);
       return null;
     }
   }, []);
+
+
+  useEffect(() => {
+    (async () => {
+      await getOrganisation();
+      setIsLoading(false);
+    })();
+  }, [getOrganisation]);
 
   return (
     <OrganisationContext.Provider
@@ -57,16 +58,15 @@ export const OrganisationProvider: React.FC<{ children: React.ReactNode }> = ({
         organisation,
         setOrganisation,
         getOrganisation,
+        isLoading,
         currentlyViewedTimtable,
-        setCurrentlyViewedTimtable
+        setCurrentlyViewedTimtable,
       }}
     >
       {children}
     </OrganisationContext.Provider>
   );
 };
-
-
 
 export const useOrganisation = (): OrganisationContextType => {
   const ctx = useContext(OrganisationContext);

@@ -47,6 +47,7 @@ import ForgotPassword from "./pages/ForgotPassword"
 import VariantListPage from "./pages/VariantListPage";
 import VariantViewerPage from "./pages/VariantViewerPage";
 import FacultyDashboard from "./pages/dashboard/Faculty/FacultyDashboard";
+import ProtectedRoute from "./components/ProtectRoute.jsx"
 
 
 const router = createBrowserRouter(
@@ -71,9 +72,9 @@ const router = createBrowserRouter(
       <Route
         path="dashboard"
         element={
-          // <ProtectedRoute>
+          <ProtectedRoute>
           <DashboardLayout />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         }
       >
         <Route path="organisation-info" element={<OrganisationInfo />} />
