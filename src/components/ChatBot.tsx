@@ -194,7 +194,7 @@ export default function ChatBotWidget() {
             <div className="flex items-center gap-2">
               <span className="text-xl">🤖</span>
               <div>
-                <span className="font-semibold block">Synchron Assistant</span>
+                <span className="font-semibold block">SchedulifyAi Assistant</span>
                 <span className="text-blue-100 text-xs">AI-powered support</span>
               </div>
             </div>
