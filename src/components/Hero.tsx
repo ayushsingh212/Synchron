@@ -56,7 +56,7 @@ const Hero: React.FC = () => {
               }}
              className="bg-green-600 text-white font-semibold px-6 py-3 rounded-full shadow hover:bg-green-900 transition"
             >
-              Get Started
+              Get Started Ayush........
             </button>
           )}
         </div>

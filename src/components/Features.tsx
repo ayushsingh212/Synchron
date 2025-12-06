@@ -12,7 +12,7 @@ const FEATURES = [
     id: "collab",
     title: "Collaboration",
     description: "Admins, faculty and students all stay connected.",
-    iconColor: "fff",
+    iconColor: "#fff",
   },
   {
     id: "smart",
@@ -30,7 +30,7 @@ const FEATURES = [
 
 const Features: React.FC = () => {
   return (
-    <section className="bg-red-600 text-white py-20">
+    <section className="bg-blue-600 text-white py-20">
       <div className="max-w-6xl mx-auto px-6">
         <h2 className="text-3xl font-bold text-center mb-14">Why Choose Us?</h2>
 
