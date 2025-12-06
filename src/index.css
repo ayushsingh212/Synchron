@@ -2,52 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-
-html, body, #root {
-height: 100%;
+html,
+body,
+#root {
+  height: 100%;
 }
-
-
 
 .hero-gradient {
-background: linear-gradient(90deg, rgba(245,247,255,1) 0%, rgba(255,247,253,1) 100%);
+  background: linear-gradient(
+    90deg,
+    rgba(245, 247, 255, 1) 0%,
+    rgba(255, 247, 253, 1) 100%
+  );
 }
-
 
 .card-shadow {
-box-shadow: 0 4px 14px rgba(12, 12, 14, 0.06);
+  box-shadow: 0 4px 14px rgba(12, 12, 14, 0.06);
 }
-
 
 /* Hide scrollbar for Chrome, Safari and Opera */
-*::-webkit-scrollbar {
+/* *::-webkit-scrollbar {
   display: none;
-}
+} */
 
 /* Hide scrollbar for IE, Edge and Firefox */
-* {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
+/* * {
+  -ms-overflow-style: none;  
+  scrollbar-width: none;  
+} */
 
-
-html, body {
-  /* overflow-x: hidden; */
-  scrollbar-width: none;
+/* html, body { */
+/* overflow-x: hidden; */
+/* scrollbar-width: none;
   -ms-overflow-style: none;
-}
+} */
 
-html::-webkit-scrollbar,
+/* html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   display: none;
-}
+} */
 
-
-.scrollbar-none::-webkit-scrollbar {
+/* .scrollbar-none::-webkit-scrollbar {
   display: none;
-}
+} */
 
-.scrollbar-none {
+/* .scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;
-}
+} */
