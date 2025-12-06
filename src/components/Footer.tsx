@@ -1,94 +1,50 @@
-import {
-  FaTruck,
-  FaCreditCard,
-  FaTags,
-  FaImage,
-  FaPencilAlt,
-  FaShoppingCart,
-} from "react-icons/fa";
+import React from "react";
+import { Link } from "react-router-dom";
 
-const services = [
-  {
-    icon: <FaPencilAlt size={26} />,
-    title: "Custom Invitation Cards",
-    desc: "Design premium luxury cards for weddings, birthdays & special events.",
-  },
-  {
-    icon: <FaImage size={26} />,
-    title: "Preview Before Ordering",
-    desc: "See high-quality previews before confirming your order.",
-  },
-  {
-    icon: <FaTruck size={26} />,
-    title: "Pan-India Delivery",
-    desc: "Safe packaging & on-time delivery across India.",
-  },
-  {
-    icon: <FaShoppingCart size={26} />,
-    title: "Smooth Shopping Experience",
-    desc: "Simple, fast & modern Flipkart-style shopping flow.",
-  },
-  {
-    icon: <FaCreditCard size={26} />,
-    title: "Multiple Payment Options",
-    desc: "UPI, cards, wallets & secure payment integrations.",
-  },
-  {
-    icon: <FaTags size={26} />,
-    title: "Bulk Order Discounts",
-    desc: "Get special discounts on wholesale & bulk orders.",
-  },
-];
-
-export default function OurServices() {
+const Footer: React.FC = () => {
   return (
-    <section className="py-20 bg-cream relative">
-      {/* Decorative gold fade top */}
-      <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-gold/30 to-transparent pointer-events-none" />
+    <footer className="bg-white text-blue-600 border-t border-blue-100">
+      <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div>
+          <h3 className="text-xl font-bold mb-3">Timetable Scheduler</h3>
+          <p className="text-sm text-slate-600">
+            AI-powered timetable management for universities and colleges. Automate, optimise and share schedules with ease.
+          </p>
+        </div>
 
-      <div className="max-w-6xl mx-auto px-6">
-        <h2 className="text-4xl md:text-5xl font-heading font-bold text-neutral text-center mb-14 heading-underline">
-          Our Services
-        </h2>
+        <div>
+          <h4 className="font-semibold mb-3">Quick Links</h4>
+          <ul className="space-y-2 text-sm">
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/about">About</Link></li>
+            <li><Link to="/contact">Contact</Link></li>
+            <li><Link to="/login">Login</Link></li>
+          </ul>
+        </div>
 
-        {/* Services Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service, index) => (
-            <div
-              key={index}
-              className="
-                bg-white 
-                border border-gold/30 
-                rounded-xl-2 
-                shadow-card-soft 
-                p-8 
-                transition-all 
-                duration-300 
-                hover:shadow-glow-gold 
-                hover:-translate-y-1 
-                animate-float
-              "
-              style={{ animationDelay: `${index * 0.15}s` }}
-            >
-              <div className="text-gold mb-4">{service.icon}</div>
+        <div>
+          <h4 className="font-semibold mb-3">Support</h4>
+          <ul className="space-y-2 text-sm text-slate-600">
+            <li>Documentation</li>
+            <li>Help Center</li>
+            <li>Privacy Policy</li>
+          </ul>
+        </div>
 
-              <h3 className="text-xl font-heading font-semibold text-neutral mb-2">
-                {service.title}
-              </h3>
-
-              <p className="text-neutral-light text-sm leading-relaxed">
-                {service.desc}
-              </p>
-
-              {/* Gold accent underline */}
-              <div className="mt-4 h-1 w-16 rounded-full bg-gradient-to-r from-gold to-gold-dark opacity-80"></div>
-            </div>
-          ))}
+        <div>
+          <h4 className="font-semibold mb-3">Contact</h4>
+          <p className="text-sm text-slate-600">timetablescheduler@gmail.com</p>
+          <p className="text-sm text-slate-600 mt-2">+91 00000 00000</p>
         </div>
       </div>
 
-      {/* Bottom soft fade */}
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-gold/20 to-transparent pointer-events-none" />
-    </section>
+      <div className="bg-white border-t border-blue-100">
+        <div className="max-w-7xl mx-auto px-6 py-4 text-center text-sm text-slate-500">
+          © {new Date().getFullYear()} Timetable Scheduler. All rights reserved.
+        </div>
+      </div>
+    </footer>
   );
-}
+};
+
+export default React.memo(Footer);
