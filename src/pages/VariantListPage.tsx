@@ -15,7 +15,6 @@ interface VariantSummary {
 const VariantListPage: React.FC = () => {
  
   const {courseId,year,semester} = useParams<{courseId: string, year: string, semester: string}>();
-  // 💡 Initialize useNavigate
   const navigate = useNavigate();
 
   const [variants, setVariants] = useState<VariantSummary[]>([]);
@@ -38,7 +37,7 @@ const VariantListPage: React.FC = () => {
     }
   }, [courseId, year, semester]); // Added dependencies for useCallback
 
-  // 💡 MODIFIED: Added navigation after successful approval
+  //  MODIFIED: Added navigation after successful approval
   const approveVariant = async (id: string) => {
     if (!window.confirm("Approve this timetable?")) return;
     try {

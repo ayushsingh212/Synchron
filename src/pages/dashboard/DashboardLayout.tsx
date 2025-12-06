@@ -55,7 +55,7 @@ const DashboardLayout: React.FC = () => {
 
         <div>
           <div className="text-lg font-bold text-blue-600">Dashboard</div>
-          <div className="text-sm text-slate-500">
+          <div className="text-lg font-bold text-blue-600">
             {organisation?.name || "Institution"}
           </div>
         </div>
@@ -76,12 +76,12 @@ const DashboardLayout: React.FC = () => {
           </NavLink>
         </nav>
 
-        <button
+        {/* <button
           onClick={logout}
           className="text-red-600 text-sm mt-auto hover:bg-red-50 px-3 py-2 rounded-lg"
         >
           Logout
-        </button>
+        </button> */}
       </aside>
 
       {/* Main content */}
