@@ -130,7 +130,7 @@ const SectionTimeTable = () => {
               }`
             );
           } else {
-            row.push("FREE");
+            row.push("FREE"); 
           }
         });
         rows.push(row);

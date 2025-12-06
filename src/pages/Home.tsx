@@ -17,7 +17,7 @@ const Home: React.FC = () => {
         <Services />
         <FeaturesIcons />
         <Testimonials />
-        <LogosCloud />
+        {/* <LogosCloud /> */}
    
       </div>
     </main>
