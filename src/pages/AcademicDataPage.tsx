@@ -631,80 +631,73 @@ const OrganisationDataTaker = () => {
     return value;
   };
 
-  const generateJson = async () => {
-    setHasAttemptedSubmit(true);
-    if (!validateForm()) {
-      toast.error("Please fix validation errors before saving");
-      return false;
-    }
-    setIsLoading(true);
-    setLoadingAction("save");
-    try {
-      let payload: any = JSON.parse(JSON.stringify(formData));
-      ["subjects", "labs", "faculty", "rooms"].forEach((key) => {
-        const items = payload[key];
-        if (Array.isArray(items)) {
-          items.forEach((i: any) => {
-            delete i._tempId;
-          });
-        }
-      });
-      let ts: any = payload.time_slots;
-      if (Array.isArray(ts.periods)) {
-        ts.periods.forEach((p: any) => delete p._tempId);
-      }
-      delete ts.generatedSchedule;
-      payload = sanitizeForBackend(payload);
-      const res = await axios.post(
-        `${API_BASE_URL}/timetable/saveData/?course=${courseId}&year=${year}&semester=${semester}`,
-        payload,
-        { withCredentials: true }
-      );
-      toast.success("Data saved successfully!");
-      setHasOrganisationData(true);
-      return true;
-    } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message || "Error saving data";
-      toast.error(errorMessage);
-      return false;
-    } finally {
-      setIsLoading(false);
-      setLoadingAction("");
-    }
-  };
 
-  const saveAndGenerate = async () => {
-    setIsLoading(true);
-    setLoadingAction("saveGenerate");
-    try {
-      const ok = await generateJson();
-      if (!ok) {
-        setIsLoading(false);
-        setLoadingAction("");
-        return;
-      }
-      const res = await axios.post(
-        `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}&semester=${semester}`,
-        {},
-        { withCredentials: true }
-      );
-      if (res.data?.data) {
-        toast.success("Generation Successful");
-        navigate(
-          `/dashboard/timetable/variants/${courseId}/${year}/${semester}`
-        );
-      }
-    } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Error generating timetable"
-      );
-    } finally {
-      setIsLoading(false);
-      setLoadingAction("");
-    }
-  };
 
+ const generateJson = async () => {
+    setHasAttemptedSubmit(true);
+    if (!validateForm()) {
+      toast.error("Please fix validation errors before saving");
+      return false;
+    }
+    // NOTE: The outer function (generateJson or saveAndGenerate) should handle isLoading/loadingAction
+    // setIsLoading(true); 
+    // setLoadingAction("save"); 
+    try {
+      let payload: any = JSON.parse(JSON.stringify(formData));
+      // ... sanitization logic ...
+      payload = sanitizeForBackend(payload);
+      const res = await axios.post(
+        `${API_BASE_URL}/timetable/saveData/?course=${courseId}&year=${year}&semester=${semester}`,
+        payload,
+        { withCredentials: true }
+      );
+      toast.success("Data saved successfully!");
+      setHasOrganisationData(true);
+      return true;
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message || "Error saving data";
+      toast.error(errorMessage);
+      return false;
+    } 
+    // REMOVED redundant finally block here, loading state is handled by the caller
+  };
+
+
+  const saveAndGenerate = async () => {
+    setIsLoading(true);
+    setLoadingAction("saveGenerate"); // This now covers the full sequence
+
+    try {
+      const ok = await generateJson(); // generateJson no longer modifies global loading state
+      
+      if (!ok) {
+        // If initial save failed, exit early and rely on finally to reset
+        return;
+      }
+      
+      // Continue with generation only if saving was successful
+      const res = await axios.post(
+        `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}&semester=${semester}`,
+        {},
+        { withCredentials: true }
+      );
+      
+      if (res.data?.data) {
+        toast.success("Generation Successful");
+        navigate(
+          `/dashboard/timetable/variants/${courseId}/${year}/${semester}`
+        );
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Error generating timetable"
+      );
+    } finally {
+      setIsLoading(false);
+      setLoadingAction("");
+    }
+  };
   const resetForm = async () => {
     if (!window.confirm("Are you sure? This cannot be undone.")) return;
     setIsLoading(true);
