@@ -308,8 +308,9 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
           className="font-medium underline ml-1 hover:text-blue-800 transition"
           onClick={() => {
             onClose();
-           
+            setTimeout(() => {
               window.dispatchEvent(new CustomEvent("open-register-modal"));
+            }, 20);
           }}
         >
           Register
