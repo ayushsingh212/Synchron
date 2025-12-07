@@ -138,26 +138,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
             className="w-full pl-10 py-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-100"
           />
         </div>
-        
-        {/* ORGANISATION TYPE (NEW FIELD) */}
-        <div className="relative">
-          <Landmark className="absolute left-3 top-3 text-blue-500 h-5" />
-          <select
-            name="organisationType"
-            value={form.organisationType}
-            onChange={handleChange}
-            className="w-full pl-10 py-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-100 appearance-none bg-white"
-          >
-            <option value="" disabled>Select Organisation Type</option>
-            <option value="Private">Private Company</option>
-            <option value="Government">Government Entity</option>
-            <option value="Non-Profit">Non-Profit Organization</option>
-            <option value="Educational">Educational Institution</option>
-          </select>
-          <span className="absolute right-3 top-3.5 text-blue-500 pointer-events-none">
-            &#9660;
-          </span>
-        </div>
+      
 
         {/* Password */}
         <div className="relative"> 
