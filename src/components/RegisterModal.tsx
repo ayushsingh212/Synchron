@@ -20,7 +20,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
     organisationName: "",
     organisationEmail: "",
     organisationContactNumber: "",
-    organisationType: "",
+    organisationType: "", // State for the missing field
     password: "",
     avatar: null as File | null
   });
@@ -65,9 +65,10 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
         { organisationEmail: form.organisationEmail },
         { withCredentials: true }
       );
-     window.dispatchEvent(new CustomEvent("close-both-modal"));
-     
-      navigate(`/verify-Email/${form.organisationEmail}`)
+      window.dispatchEvent(new CustomEvent("close-both-modal"));
+      
+      // Navigating to the verification page after registration
+      navigate(`/verify-Email/${form.organisationEmail}`);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Registration failed");
     } finally {
@@ -76,8 +77,13 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
   };
 
   const openLoginInstead = () => {
-    onClose();
-    window.dispatchEvent(new CustomEvent("open-login-modal"));
+    // 1. Close the register modal immediately
+    onClose(); 
+    
+    // 2. Add a delay (e.g., 350ms) to allow the register modal's closing animation to finish
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("open-login-modal"));
+    }, 350); // 👈 Fix for smooth transition
   };
 
   const valid =
@@ -85,7 +91,6 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
     form.organisationEmail.includes("@") &&
     form.organisationContactNumber.length === 10 &&
     form.password.length >= 8 &&
-    form.organisationType &&
     form.avatar;
 
   return (
@@ -95,6 +100,8 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        
+        {/* Organisation Name */}
         <div className="relative">
           <Building2 className="absolute left-3 top-3 text-blue-500 h-5" />
           <input
@@ -106,8 +113,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
           />
         </div>
 
-        
-
+        {/* Organisation Email */}
         <div className="relative">
           <Mail className="absolute left-3 top-3 text-blue-500 h-5" />
           <input
@@ -120,6 +126,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
           />
         </div>
 
+        {/* Organisation Contact Number */}
         <div className="relative">
           <Phone className="absolute left-3 top-3 text-blue-500 h-5" />
           <input
@@ -131,8 +138,12 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
             className="w-full pl-10 py-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-100"
           />
         </div>
+        
+       
 
-        <div className="relative">
+
+        {/* Password */}
+        <div className="relative"> 
           <Lock className="absolute left-3 top-3 text-blue-500 h-5" />
           <input
             type={showPassword ? "text" : "password"}
@@ -150,6 +161,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
           </span>
         </div>
 
+        {/* Avatar File Input */}
         <div className="relative">
           <ImageIcon className="absolute left-3 top-3 text-blue-500" size={18} />
           <input
@@ -163,7 +175,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
 
         <button
           disabled={!valid || loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold disabled:opacity-50 transition-colors"
         >
           {loading ? "Creating..." : "Create Organisation"}
         </button>
