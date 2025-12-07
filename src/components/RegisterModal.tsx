@@ -12,15 +12,20 @@ interface Props {
   onClose: () => void;
 }
 
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isEmailInvalid, setIsEmailInvalid] = useState(false); // 👈 New State for Email Check
+  
   const navigate = useNavigate();
   const [form, setForm] = useState({
     organisationName: "",
     organisationEmail: "",
     organisationContactNumber: "",
-    organisationType: "", // State for the missing field
+    organisationType: "", 
     password: "",
     avatar: null as File | null
   });
@@ -42,12 +47,31 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
       setForm({ ...form, avatar: files[0] });
       return;
     }
+    
+    // 📧 EMAIL REGEX CHECK LOGIC
+    if (name === "organisationEmail") {
+        // Only validate if the email field is not empty
+        if (value.length > 0) {
+            // Test the current value against the RegEx
+            setIsEmailInvalid(!EMAIL_REGEX.test(value));
+        } else {
+            // Reset invalid state when field is empty
+            setIsEmailInvalid(false);
+        }
+    }
 
     setForm({ ...form, [name]: value });
   };
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+    
+    // Check form validity including the new email check before proceeding
+    if (!valid || isEmailInvalid) {
+        toast.error("Please ensure all fields are correctly filled.");
+        return;
+    }
+
     setLoading(true);
 
     try {
@@ -66,8 +90,6 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
         { withCredentials: true }
       );
       window.dispatchEvent(new CustomEvent("close-both-modal"));
-      
-      // Navigating to the verification page after registration
       navigate(`/verify-Email/${form.organisationEmail}`);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Registration failed");
@@ -77,20 +99,17 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
   };
 
   const openLoginInstead = () => {
-    // 1. Close the register modal immediately
     onClose(); 
-    
-    // 2. Add a delay (e.g., 350ms) to allow the register modal's closing animation to finish
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("open-login-modal"));
-    }, 350); // 👈 Fix for smooth transition
+    // setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("open-login-modal"));
+    // }, 200);
   };
 
   const valid =
     form.organisationName.trim() &&
-    form.organisationEmail.includes("@") &&
+    EMAIL_REGEX.test(form.organisationEmail) && // 👈 Updated email validation
     form.organisationContactNumber.length === 10 &&
-    form.password.length >= 8 &&
+    form.password.length >= 8 && 
     form.avatar;
 
   return (
@@ -122,8 +141,15 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
             onChange={handleChange}
             placeholder="Organisation Email"
             type="email"
-            className="w-full pl-10 py-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-100"
+            // Change border color dynamically if email is invalid
+            className={`w-full pl-10 py-3 rounded-lg border ${isEmailInvalid ? 'border-red-500' : 'border-blue-200'} focus:ring-2 focus:ring-blue-100`}
           />
+          {/* 📧 FEEDBACK MESSAGE FOR INVALID EMAIL */}
+          {isEmailInvalid && (
+            <p className="text-red-500 text-xs mt-1 absolute left-0 -bottom-4">
+                Please enter a valid email format (e.g., user@domain.com).
+            </p>
+          )}
         </div>
 
         {/* Organisation Contact Number */}
@@ -138,9 +164,6 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
             className="w-full pl-10 py-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-100"
           />
         </div>
-        
-       
-
 
         {/* Password */}
         <div className="relative"> 
@@ -174,7 +197,8 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
         </div>
 
         <button
-          disabled={!valid || loading}
+          // Disable button if validation fails OR if email is invalid
+          disabled={!valid || loading || isEmailInvalid} 
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold disabled:opacity-50 transition-colors"
         >
           {loading ? "Creating..." : "Create Organisation"}
