@@ -436,7 +436,7 @@ const UploadPdf = () => {
 
             <div className="mt-4 flex items-center gap-3">
               <button
-                onClick={() => navigate("/dashboard/organisation-data-taker")}
+                onClick={() => navigate("/dashboard/organisation-data-course")}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white shadow hover:bg-blue-700 transition"
               >
                 <ArrowRightCircle className="w-4 h-4" />

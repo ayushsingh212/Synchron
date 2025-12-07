@@ -107,21 +107,6 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
         </div>
 
         <div className="relative">
-          <Landmark className="absolute left-3 top-3 text-blue-500 h-5" />
-          <select
-            name="organisationType"
-            value={form.organisationType}
-            onChange={handleChange}
-            className="w-full pl-10 py-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-100 bg-white"
-          >
-            <option value="">Select Organisation Type</option>
-            <option value="school">School</option>
-            <option value="college">College</option>
-            <option value="university">University</option>
-          </select>
-        </div>
-
-        <div className="relative">
           <Mail className="absolute left-3 top-3 text-blue-500 h-5" />
           <input
             name="organisationEmail"
@@ -145,7 +130,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
           />
         </div>
 
-        <div className="relative">
+        <div className="relative">  
           <Lock className="absolute left-3 top-3 text-blue-500 h-5" />
           <input
             type={showPassword ? "text" : "password"}
