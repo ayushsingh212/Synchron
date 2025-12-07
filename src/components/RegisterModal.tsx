@@ -6,6 +6,7 @@ import { Building2, Mail, Lock, Phone, Image as ImageIcon, Landmark } from "luci
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { useOrganisation } from "../context/OrganisationContext"; 
 
 interface Props {
   open: boolean;
@@ -16,6 +17,7 @@ interface Props {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
+  const { refreshOrganisation } = useOrganisation();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isEmailInvalid, setIsEmailInvalid] = useState(false); // 👈 New State for Email Check
@@ -73,26 +75,55 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
     }
 
     setLoading(true);
-
-    try {
-      const fd = new FormData();
-      Object.entries(form).forEach(([key, val]) => fd.append(key, val as any));
-
-      await axios.post(`${API_BASE_URL}/organisation/register`, fd, {
-        withCredentials: true
+ try {
+      const formData = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        if (value !== null) {
+          formData.append(key, value);
+        }
       });
 
-      toast.success("Registered successfully");
+      // Register organisation
+      await axios.post(`${API_BASE_URL}/organisation/register`, formData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
 
-      await axios.post(
-        `${API_BASE_URL}/verification/getOtp/register`,
-        { organisationEmail: form.organisationEmail },
-        { withCredentials: true }
-      );
-      window.dispatchEvent(new CustomEvent("close-both-modal"));
-      navigate(`/verify-Email/${form.organisationEmail}`);
+      toast.success("Registered successfully!");
+
+      // CRITICAL: Refresh organisation context
+      await refreshOrganisation();
+
+      // Request OTP for email verification
+      try {
+        await axios.post(
+          `${API_BASE_URL}/verification/getOtp/register`,
+          { organisationEmail: form.organisationEmail },
+          { withCredentials: true }
+        );
+      } catch (otpError: any) {
+        console.error("OTP sending failed:", otpError);
+        toast.warning("Registration successful but OTP could not be sent. Please contact support.");
+      }
+
+      // Close modal and navigate to verification
+      setIsClosing(true);
+      setTimeout(() => {
+        onClose();
+        window.dispatchEvent(new CustomEvent("close-both-modal"));
+        // Use lowercase 'verify-email' to match your route
+        navigate(`/verify-email/${encodeURIComponent(form.organisationEmail)}`);
+        setIsClosing(false);
+      }, 300);
+
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Registration failed");
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          "Registration failed. Please try again.";
+      toast.error(errorMessage);
+      console.error("Registration error:", err);
     } finally {
       setLoading(false);
     }
