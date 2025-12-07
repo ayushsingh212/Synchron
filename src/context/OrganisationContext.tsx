@@ -1,3 +1,4 @@
+// context/OrganisationContext.tsx
 import { useState, createContext, useContext, useCallback, useEffect } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
@@ -9,6 +10,7 @@ export interface OrganisationType {
   type?: string;
   avatar?: string;
   contactNumber?: string;
+  isEmailVerified?: boolean; // Add this field
   [key: string]: any;
 }
 
@@ -19,6 +21,7 @@ export interface OrganisationContextType {
   isLoading: boolean;
   currentlyViewedTimtable: any[];
   setCurrentlyViewedTimtable: (v: any[]) => void;
+  refreshOrganisation: () => Promise<void>; // Add this method
 }
 
 export const OrganisationContext = createContext<OrganisationContextType | undefined>(undefined);
@@ -36,17 +39,24 @@ export const OrganisationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       const data = res.data?.data || null;
       setOrganisation(data);
-
       return data;
     } catch (error) {
+      console.error("Error fetching organisation:", error);
       setOrganisation(null);
       return null;
     }
   }, []);
 
+  // Add refresh method
+  const refreshOrganisation = useCallback(async () => {
+    setIsLoading(true);
+    await getOrganisation();
+    setIsLoading(false);
+  }, [getOrganisation]);
 
   useEffect(() => {
     (async () => {
+      setIsLoading(true);
       await getOrganisation();
       setIsLoading(false);
     })();
@@ -61,6 +71,7 @@ export const OrganisationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         isLoading,
         currentlyViewedTimtable,
         setCurrentlyViewedTimtable,
+        refreshOrganisation, // Add this
       }}
     >
       {children}
@@ -70,10 +81,8 @@ export const OrganisationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 export const useOrganisation = (): OrganisationContextType => {
   const ctx = useContext(OrganisationContext);
-
   if (!ctx) {
     throw new Error("useOrganisation must be used inside <OrganisationProvider>");
   }
-
   return ctx;
 };

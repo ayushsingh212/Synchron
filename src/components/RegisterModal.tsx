@@ -107,7 +107,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
 
   const valid =
     form.organisationName.trim() &&
-    EMAIL_REGEX.test(form.organisationEmail) && // 👈 Updated email validation
+    EMAIL_REGEX.test(form.organisationEmail) && 
     form.organisationContactNumber.length === 10 &&
     form.password.length >= 8 && 
     form.avatar;
@@ -127,6 +127,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
             name="organisationName"
             value={form.organisationName}
             onChange={handleChange}
+            maxLength={50}
             placeholder="Organisation Name"
             className="w-full pl-10 py-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-100"
           />
@@ -139,6 +140,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
             name="organisationEmail"
             value={form.organisationEmail}
             onChange={handleChange}
+            maxLength={40}
             placeholder="Organisation Email"
             type="email"
             // Change border color dynamically if email is invalid
@@ -173,6 +175,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
             name="password"
             value={form.password}
             onChange={handleChange}
+            maxLength={20}
             placeholder="Password (min 8 characters)"
             className="w-full pl-10 pr-10 py-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-100"
           />
