@@ -266,7 +266,7 @@ const AuthorityDashboard = () => {
           color="indigo"
         />
          <button onClick={()=>{
-          window.location.href ="http://localhost:5173/dashboard/organisation-info"
+          window.location.href ="https://schedulifyai.live/dashboard/organisation-info"
          }}>Work as Senete</button>
       </div>
 
