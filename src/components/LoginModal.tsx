@@ -36,7 +36,7 @@ interface Props {
 
 const LoginModal: React.FC<Props> = ({ open, onClose }) => {
   const [loginMethod, setLoginMethod] = useState<"password" | "otp">("password");
-  const [loginRole, setLoginRole] = useState<"authority" | "senet">("authority");
+  const [loginRole, setLoginRole] = useState<"authority" | "senate">("authority");
 
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -47,6 +47,7 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
   const [formData, setFormData] = useState({
     organisationEmail: "",
     organisationContactNumber: "",
+    senateId:"",
     password: "",
     otp: "",
   });
@@ -103,7 +104,7 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
         if (loginRole === "authority") {
           const loginData = {
             organisationEmailOrorganisationContactNumber:
-              formData.organisationEmail || formData.organisationContactNumber,
+            formData.organisationEmail || formData.organisationContactNumber,
             password: formData.password,
           };
 
@@ -115,7 +116,7 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
         } else {
           const loginData = {
             organisationEmail: formData.organisationEmail,
-            senateId: formData.organisationContactNumber,
+            senateId: formData.senateId,
             password: formData.password,
           };
 
@@ -218,15 +219,15 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
 
           <button
             type="button"
-            onClick={() => setLoginRole("senet")}
+            onClick={() => setLoginRole("senate")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 transition-all ${
-              loginRole === "senet"
+              loginRole === "senate"
                 ? "border-blue-600 bg-blue-50 text-blue-700"
                 : "border-gray-300 bg-white text-gray-700 hover:border-blue-400"
             }`}
           >
             <Briefcase size={18} />
-            <span>Senet</span>
+            <span>Senate</span>
           </button>
         </div>
 
@@ -238,6 +239,8 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
           )}
         </div>
       </div>
+
+
 
       <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
         <button
@@ -265,39 +268,59 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
-        {loginMethod === "password" ? (
-          <>
-            <div className="relative">
-              <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
-              <input
-                type="text"
-                name="organisationEmail"
-                value={formData.organisationEmail}
-                onChange={handleChange}
-                placeholder={
-                  loginRole === "authority"
-                    ? "Organisation Email"
-                    : "Your Organisation Email"
-                }
-                className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                disabled={loading}
-              />
-            </div>
+                    {loginMethod === "password" ? (
+              <>
+                {/* Email */}
+                <div className="relative">
+                  <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
+                  <input
+                    type="text"
+                    name="organisationEmail"
+                    value={formData.organisationEmail}
+                    onChange={handleChange}
+                    placeholder={
+                      loginRole === "authority"
+                        ? "Organisation Email"
+                        : "Your Organisation Email"
+                    }
+                    className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    disabled={loading}
+                  />
+                </div>
 
-            <div className="relative">
-              <Lock className="absolute left-4 top-3.5 text-blue-600 h-5" />
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Password"
-                className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                disabled={loading}
-              />
-            </div>
-          </>
-        ) : (
+                {loginRole === "senate" && (
+                  <div className="relative">
+                    <Hash className="absolute left-4 top-3.5 text-blue-600 h-5" />
+                    <input
+                      type="text"
+                      name="senateId"
+                      value={formData.senateId}
+                      onChange={handleChange}
+                      placeholder="Enter Senate Email"
+                      className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                      disabled={loading}
+                    />
+                    
+                  </div>
+                  
+                )}
+
+                {/* Password */}
+                <div className="relative">
+                  <Lock className="absolute left-4 top-3.5 text-blue-600 h-5" />
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Password"
+                    className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    disabled={loading}
+                  />
+                </div>
+              </>
+            ) : (
+
           <>
             <div className="relative">
               <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
@@ -347,7 +370,7 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
           {loading
             ? "Processing..."
             : loginMethod === "password"
-            ? `Login as ${loginRole === "authority" ? "Authority" : "Senet"}`
+            ? `Login as ${loginRole === "authority" ? "Authority" : "Senate"}`
             : "Verify & Login"}
         </button>
       </form>

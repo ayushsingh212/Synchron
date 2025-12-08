@@ -74,7 +74,7 @@ const router = createBrowserRouter(
       <Route path="Faculty" element={<FacultyDashboard />} />
       <Route path="authority-dashboard" element={<AuthorityDashboardLayout />} >
        <Route path="management-panel" element= {<AuthorityDashboard/>}/>
-      
+          <Route path="manage-variants/:courseId/:year/:semester" element={<TimeTableVariantViewer />} />
       <Route  path="manage-senetes" element ={<AssignSenete/>} />
         <Route path= "manage-documents" element={<DocumentManagement/>}/>
       
@@ -100,8 +100,8 @@ const router = createBrowserRouter(
         <Route path="facultyTimeTable/:courseId/:year/:semester" element={<FacultyTimeTable />} />
         <Route path="sectionTimeTable/:courseId/:year/:semester" element={<SectionTimeTable />} />
         <Route path="manage-timetable" element={<TimetableManager />} />
-        <Route path="timetable/variants/:courseId/:year/:semester" element={<VariantListPage />} />
-        <Route path="/dashboard/timetable-viewer/:courseId/:year/:semester" element={<TimeTableVariantViewer />} />
+        {/* <Route path="timetable/variants/:courseId/:year/:semester" element={<VariantListPage />} /> */}
+    
       </Route>
     </Route>
   )

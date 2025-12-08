@@ -69,6 +69,10 @@ const DashboardLayout: React.FC = () => {
             Academic Data Manager
           </NavLink>
 
+
+        <NavLink to="organisation-data-course" onClick={() => setSidebarOpen(false)} className={linkClasses}>
+            TimeTable Sent For Approval
+          </NavLink>
       
 
           <NavLink to="timetables" onClick={() => setSidebarOpen(false)} className={linkClasses}>
