@@ -2,20 +2,20 @@ import React from "react";
 
 const serviceList = [
   {
-    title: "Fast & Reliable",
-    desc: "Optimized AI timetabling with near real-time generation.",
-  },
-  {
-    title: "Collaboration",
-    desc: "Admins, faculty and students collaborate seamlessly.",
-  },
-  {
-    title: "Smart Scheduling",
+    title: "Smart Sheduling",
     desc: "Auto-detects conflicts and suggests optimal replacements.",
   },
   {
-    title: "Resource Manager",
-    desc: "Manage subjects, rooms, labs and faculty in one place.",
+    title: "Yield Results ",
+    desc: "Focused on outcomes that matter.",
+  },
+  {
+    title: "No Hassle",
+    desc: " Smooth, simple and stress-free.",
+  },
+  {
+    title: "Complete Automation",
+    desc: "Reduce manual effort drastically",
   },
 ];
 

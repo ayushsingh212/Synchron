@@ -79,11 +79,10 @@ const OrganisationDataTaker = () => {
   const initialFormData = {
     college_info: { name: "", session: "", effective_date: "" },
     time_slots: {
-      periods: [] as { id: number; start_time: string; end_time: string }[],
+      periods: [] as { id: number; type: "period" | "shortBreak" | "lunchBreak"; start_time: string; end_time: string }[],
       working_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
       break_periods: [] as number[],
       lunch_period: null as number | null,
-      mentorship_period: null as number | null,
       start_time: "",
       end_time: "",
       periodCount: undefined as number | undefined,
@@ -112,7 +111,6 @@ const OrganisationDataTaker = () => {
         no_section_clash: true,
         break_periods_fixed: [] as number[],
         lunch_period_fixed: null as number | null,
-        mentorship_period_fixed: null as number | null,
         max_classes_per_day_per_section: 7,
         min_classes_per_week_per_subject: true,
         lab_duration_consecutive: true,
@@ -977,9 +975,15 @@ const OrganisationDataTaker = () => {
                     }
                   >
                     <option value="">Select</option>
+                    <option value={4}>4 Periods</option>
+                    <option value={5}>5 Periods</option>
                     <option value={6}>6 Periods</option>
                     <option value={7}>7 Periods</option>
                     <option value={8}>8 Periods</option>
+                    <option value={9}>9 Periods</option>
+                    <option value={10}>10 Periods</option>
+                    <option value={11}>11 Periods</option>
+                    <option value={12}>12 Periods</option>
                   </select>
                 </div>
                 <div className="mb-4">
@@ -1104,128 +1108,146 @@ const OrganisationDataTaker = () => {
               <button
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 w-full mb-6"
                 type="button"
-                onClick={() => {
-                  const {
-                    start_time,
-                    end_time,
-                    periodCount,
-                    periodDuration,
-                    shortBreak,
-                    lunchBreak,
-                    shortBreakAfter,
-                    lunchBreakAfter,
-                  } = formData.time_slots;
+                  onClick={() => {
+                    const {
+                      start_time,
+                      end_time,
+                      periodCount,
+                      periodDuration,
+                      shortBreak,
+                      lunchBreak,
+                      shortBreakAfter,
+                      lunchBreakAfter,
+                    } = formData.time_slots;
 
-                  if (!start_time || !end_time || !periodCount || !periodDuration) {
-                    alert("Please fill all required fields.");
-                    return;
-                  }
+                    // --- Validation ---
+                    if (!start_time || !end_time || !periodCount || !periodDuration) {
+                      alert("Please fill all required fields.");
+                      return;
+                    }
 
-                  const [sh, sm] = start_time.split(":").map(Number);
-                  const [eh, em] = end_time.split(":").map(Number);
+                    const [sh, sm] = start_time.split(":").map(Number);
+                    const [eh, em] = end_time.split(":").map(Number);
 
-                  const startMinutes = sh * 60 + sm;
-                  const endMinutes = eh * 60 + em;
+                    const startMinutes = sh * 60 + sm;
+                    const endMinutes = eh * 60 + em;
 
-                  if (endMinutes <= startMinutes) {
-                    alert("End time must be after start time.");
-                    return;
-                  }
+                    if (endMinutes <= startMinutes) {
+                      alert("End time must be after start time.");
+                      return;
+                    }
 
-                  const PERIOD = periodDuration || 45;
-                  const SHORT = shortBreak || 10;
-                  const LUNCH = lunchBreak || 30;
+                    // --- Configuration ---
+                    const PERIOD = periodDuration || 45;
+                    const SHORT = shortBreak || 10;
+                    const LUNCH = lunchBreak || 30;
 
-                  const format = (m: number) =>
-                    `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(
-                      m % 60
-                    ).padStart(2, "0")}`;
+                    const format = (m: number) =>
+                      `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(
+                        m % 60
+                      ).padStart(2, "0")}`;
 
-                  let current = startMinutes;
-                  const generatedSchedule: {
-                    id: number | string;
-                    type: "period" | "shortBreak" | "lunchBreak";
-                    start_time: string;
-                    end_time: string;
-                    duration: number;
-                  }[] = [];
-                  const simplePeriods: {
-                    id: number;
-                    start_time: string;
-                    end_time: string;
-                  }[] = [];
-                  const breakPeriodsConfig: number[] = [];
-                  let lunchPeriodConfig: number | null = null;
+                    let current = startMinutes;
+                    
+                    // This single array will hold Periods AND Breaks to ensure no time is skipped
+                    const allSlots: {
+                      id: number | string;
+                      type: "period" | "shortBreak" | "lunchBreak";
+                      start_time: string;
+                      end_time: string;
+                      duration: number;
+                    }[] = [];
+                    
+                    const breakPeriodsIndices: number[] = [];
+                    let lunchPeriodIndex: number | null = null;
 
-                  for (let i = 1; i <= periodCount; i++) {
-                    const periodEnd = current + PERIOD;
-                    const periodObject = {
-                      id: i,
-                      type: "period" as const,
-                      start_time: format(current),
-                      end_time: format(periodEnd),
-                      duration: PERIOD,
-                    };
-                    generatedSchedule.push(periodObject);
-                    simplePeriods.push({
-                      id: i,
-                      start_time: periodObject.start_time,
-                      end_time: periodObject.end_time,
+                    // --- Generation Loop ---
+                    for (let i = 1; i <= periodCount; i++) {
+                      const periodEnd = current + PERIOD;
+                      
+                      // 1. Add the Teaching Period
+                      // --------------------------
+                      allSlots.push({
+                        id: i, // ID is the period number (e.g., 1, 2, 3)
+                        type: "period",
+                        start_time: format(current),
+                        end_time: format(periodEnd),
+                        duration: PERIOD,
+                      });
+                      
+                      current = periodEnd;
+
+                      // 2. Check for Short Break
+                      // ------------------------
+                      if (i === shortBreakAfter) {
+                        const breakEnd = current + SHORT;
+                        
+                        // Track the index where this break will live (e.g., index 2)
+                        breakPeriodsIndices.push(i+1);
+
+                        // Push the Break as an actual slot
+                        allSlots.push({
+                          id: `${i+1}`,
+                          type: "shortBreak",
+                          start_time: format(current),
+                          end_time: format(breakEnd),
+                          duration: SHORT,
+                        });
+                        i++;
+                        current = breakEnd;
+
+                        
+                      }
+
+                      // 3. Check for Lunch Break
+                      // ------------------------
+                      if (i === lunchBreakAfter) {
+                        const lunchEnd = current + LUNCH;
+                        
+                        // Track the index where this lunch will live
+                        lunchPeriodIndex = i+1;
+                        
+
+                        // Push the Lunch as an actual slot
+                        allSlots.push({
+                          id: `${i+1}`,
+                          type: "lunchBreak",
+                          start_time: format(current),
+                          end_time: format(lunchEnd),
+                          duration: LUNCH,
+                        });
+                        i++;
+                        current = lunchEnd;
+                      }
+                    }
+
+                    // --- Final Check ---
+                    if (current > endMinutes) {
+                      const totalDuration = current - startMinutes;
+                      const hoursNeeded = Math.floor(totalDuration / 60);
+                      const minsNeeded = totalDuration % 60;
+                      alert(
+                        `Not enough time! The schedule requires ${hoursNeeded}h ${minsNeeded}m and ends at ${format(
+                          current
+                        )}. Please extend End Time.`
+                      );
+                      return;
+                    }
+
+                    // --- Update State ---
+                    setFormData({
+                      ...formData,
+                      time_slots: {
+                        ...formData.time_slots,
+                        // 'periods' now contains the FULL list (classes + breaks)
+                        // This ensures 10:10-11:00 exists in the array and won't be skipped.
+                        periods: allSlots, 
+                        generatedSchedule: allSlots, // Preview uses the same list
+                        break_periods: breakPeriodsIndices,
+                        lunch_period: lunchPeriodIndex,
+                      },
                     });
-                    current = periodEnd;
-
-                    if (i === shortBreakAfter) {
-                      const breakEnd = current + SHORT;
-                      generatedSchedule.push({
-                        id: `short-break-${i}`,
-                        type: "shortBreak",
-                        start_time: format(current),
-                        end_time: format(breakEnd),
-                        duration: SHORT,
-                      });
-                      current = breakEnd;
-                      breakPeriodsConfig.push(i);
-                    }
-
-                    if (i === lunchBreakAfter) {
-                      const lunchEnd = current + LUNCH;
-                      generatedSchedule.push({
-                        id: `lunch-break-${i}`,
-                        type: "lunchBreak",
-                        start_time: format(current),
-                        end_time: format(lunchEnd),
-                        duration: LUNCH,
-                      });
-                      current = lunchEnd;
-                      lunchPeriodConfig = i;
-                    }
-                  }
-
-                  if (current > endMinutes) {
-                    const totalDuration = current - startMinutes;
-                    const hoursNeeded = Math.floor(totalDuration / 60);
-                    const minsNeeded = totalDuration % 60;
-                    alert(
-                      `Not enough time! The schedule requires ${hoursNeeded}h ${minsNeeded}m and ends at ${format(
-                        current
-                      )}. Please extend End Time.`
-                    );
-                    return;
-                  }
-
-                  setFormData({
-                    ...formData,
-                    time_slots: {
-                      ...formData.time_slots,
-                      periods: simplePeriods,
-                      generatedSchedule,
-                      break_periods: breakPeriodsConfig.filter(
-                        (id) => id !== lunchPeriodConfig
-                      ),
-                      lunch_period: lunchPeriodConfig,
-                    },
-                  });
-                }}
+                  }}
               >
                 Generate Time Slots
               </button>

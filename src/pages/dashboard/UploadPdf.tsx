@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import axios from "axios";
 import {
@@ -26,6 +25,150 @@ const UploadPdf = () => {
   const [isDragging, setIsDragging] = useState(false); // drag hover state
   const { hasOrganisationData, setHasOrganisationData } = useAppState()
   const fileInputRef = useRef();
+
+  // Function to transform parsed time slots to match the manual editor structure
+  const transformTimeSlotsForManualEditor = (parsedTimeSlots) => {
+    console.log("Transforming time slots:", parsedTimeSlots);
+    
+    if (!parsedTimeSlots) {
+      return {
+        periods: [],
+        working_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        break_periods: [],
+        lunch_period: null,
+        start_time: "09:00",
+        end_time: "17:00",
+        periodCount: 0,
+        periodDuration: 45,
+        shortBreak: 10,
+        lunchBreak: 45,
+        shortBreakAfter: 2,
+        lunchBreakAfter: 4,
+        generatedSchedule: []
+      };
+    }
+
+    const periods = parsedTimeSlots.periods || [];
+    const working_days = parsedTimeSlots.working_days || ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    
+    if (periods.length === 0) {
+      return {
+        periods: [],
+        working_days,
+        break_periods: [],
+        lunch_period: null,
+        start_time: "09:00",
+        end_time: "17:00",
+        periodCount: 0,
+        periodDuration: 45,
+        shortBreak: 10,
+        lunchBreak: 45,
+        shortBreakAfter: 2,
+        lunchBreakAfter: 4,
+        generatedSchedule: []
+      };
+    }
+
+    // Calculate period duration in minutes
+    const calculateDuration = (start, end) => {
+      const [sh, sm] = start.split(':').map(Number);
+      const [eh, em] = end.split(':').map(Number);
+      return (eh * 60 + em) - (sh * 60 + sm);
+    };
+
+    // Get start and end times
+    const start_time = periods[0]?.start_time || "09:00";
+    const end_time = periods[periods.length - 1]?.end_time || "17:00";
+    
+    // Calculate average period duration
+    let totalDuration = 0;
+    periods.forEach(period => {
+      totalDuration += calculateDuration(period.start_time, period.end_time);
+    });
+    const periodDuration = Math.round(totalDuration / periods.length);
+    
+    // Create generatedSchedule with proper structure
+    const generatedSchedule = periods.map((period, index) => {
+      const duration = calculateDuration(period.start_time, period.end_time);
+      const id = period.id || index + 1;
+      
+      // Try to identify breaks based on duration
+      let type = "period";
+      if (duration < 20) {
+        type = "shortBreak";
+      } else if (duration > 30 && duration < 60) {
+        // Could be lunch break
+        type = "lunchBreak";
+      }
+      
+      return {
+        id: id,
+        type: type,
+        start_time: period.start_time,
+        end_time: period.end_time,
+        duration: duration
+      };
+    });
+
+    // Identify break periods
+    const breakPeriodsIndices = generatedSchedule
+      .filter(slot => slot.type === "shortBreak")
+      .map(slot => slot.id);
+    
+    const lunchPeriodIndex = generatedSchedule.find(slot => slot.type === "lunchBreak")?.id || null;
+
+    // Update periods with types
+    const periodsWithTypes = generatedSchedule.map(slot => ({
+      id: slot.id,
+      type: slot.type,
+      start_time: slot.start_time,
+      end_time: slot.end_time
+    }));
+
+    // Determine break positions (find first teaching period before a break)
+    let shortBreakAfter = 2;
+    let lunchBreakAfter = 4;
+    
+    if (breakPeriodsIndices.length > 0) {
+      const firstShortBreakId = Math.min(...breakPeriodsIndices);
+      shortBreakAfter = firstShortBreakId - 1;
+    }
+    
+    if (lunchPeriodIndex) {
+      lunchBreakAfter = lunchPeriodIndex - 1;
+    } else if (periods.length > 6) {
+      lunchBreakAfter = Math.floor(periods.length / 2);
+    }
+
+    return {
+      periods: periodsWithTypes,
+      working_days,
+      break_periods: breakPeriodsIndices,
+      lunch_period: lunchPeriodIndex,
+      start_time,
+      end_time,
+      periodCount: periods.length,
+      periodDuration,
+      shortBreak: 10,
+      lunchBreak: 45,
+      shortBreakAfter,
+      lunchBreakAfter,
+      generatedSchedule
+    };
+  };
+
+  // Transform the entire parsed result for the manual editor
+  const transformParsedResult = (parsedResult) => {
+    if (!parsedResult) return parsedResult;
+    
+    const transformed = {
+      ...parsedResult,
+      time_slots: transformTimeSlotsForManualEditor(parsedResult.time_slots)
+    };
+    
+    console.log("Transformed result:", transformed);
+    return transformed;
+  };
 
   // handle file selection
   const handleFileChange = (e) => {
@@ -97,10 +240,13 @@ const UploadPdf = () => {
         return;
       }
 
-      setResult(parsed);
+      // Transform the parsed result immediately
+      const transformedResult = transformParsedResult(parsed);
+      setResult(transformedResult);
       setDone(true);
       toast.success("PDF parsed successfully — please verify the data below.");
-      console.log("Parsed result:", parsed);
+      console.log("Original parsed:", parsed);
+      console.log("Transformed for editor:", transformedResult);
     } catch (error) {
       console.error("Upload/parse error:", error);
       toast.error("Failed to parse PDF. Try again or upload a different file.");
@@ -120,15 +266,20 @@ const UploadPdf = () => {
     try {
       setSaving(true);
 
-      if (!result.college_info && !result.time_slots) {
+      // Ensure result is transformed before saving
+      const dataToSave = transformParsedResult(result);
+      
+      if (!dataToSave.college_info && !dataToSave.time_slots) {
         toast.warn(
           "Parsed data looks suspicious — check the preview before saving."
         );
       }
 
+      console.log("Saving transformed data:", dataToSave);
+
       const res = await axios.post(
         `${API_BASE_URL}/timetable/saveData?course=${courseId}&year=${year}&semester=${semester}`,
-        result,
+        dataToSave,
         {
           headers: { "Content-Type": "application/json" },
           withCredentials: true,
@@ -208,7 +359,7 @@ const UploadPdf = () => {
 
           <div className="flex items-center gap-3">
             <Link
-              to={`/dashboard/organisation-data-taker/${courseId}/${year}/data`}
+              to={`/dashboard/organisation-data-taker/${courseId}/${year}/${semester}/data`}
               className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50"
             >
               <FileText className="w-4 h-4" />
@@ -345,22 +496,51 @@ const UploadPdf = () => {
                   </div>
                 )}
 
-                {/* Time Slots */}
+                {/* Time Slots - Show both original and transformed */}
                 {result.time_slots && (
                   <div className="p-4 bg-green-50 border-l-4 border-green-600 rounded">
-                    <h3 className="font-semibold text-green-700 mb-2">Time Slots</h3>
+                    <h3 className="font-semibold text-green-700 mb-2">Time Slots (Transformed for Manual Editor)</h3>
+                    
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Configuration:</p>
+                      <ul className="text-sm space-y-1">
+                        <li><strong>Start Time:</strong> {result.time_slots.start_time || "09:00"}</li>
+                        <li><strong>End Time:</strong> {result.time_slots.end_time || "17:00"}</li>
+                        <li><strong>Period Count:</strong> {result.time_slots.periodCount || 0}</li>
+                        <li><strong>Period Duration:</strong> {result.time_slots.periodDuration || 45} minutes</li>
+                        <li><strong>Short Break:</strong> {result.time_slots.shortBreak || 10} minutes after period {result.time_slots.shortBreakAfter || 2}</li>
+                        <li><strong>Lunch Break:</strong> {result.time_slots.lunchBreak || 45} minutes after period {result.time_slots.lunchBreakAfter || 4}</li>
+                      </ul>
+                    </div>
 
                     {result.time_slots.periods?.length > 0 && (
-                      <ul className="space-y-1 text-sm">
-                        {result.time_slots.periods.map((p, idx) => (
-                          <li key={idx} className="bg-white p-2 rounded shadow-sm">
-                            <strong>Period {p.id}</strong>: {p.start_time} → {p.end_time}
-                          </li>
-                        ))}
-                      </ul>
+                      <div>
+                        <p className="font-medium mb-2">Schedule:</p>
+                        <ul className="space-y-1 text-sm">
+                          {result.time_slots.periods.map((p, idx) => {
+                            const isBreak = p.type === "shortBreak" || p.type === "lunchBreak";
+                            return (
+                              <li key={idx} className={`bg-white p-2 rounded shadow-sm ${isBreak ? 'bg-yellow-50' : ''}`}>
+                                <strong>
+                                  {p.type === "shortBreak" ? "Short Break" : 
+                                   p.type === "lunchBreak" ? "Lunch Break" : 
+                                   `Period ${p.id}`}
+                                </strong>: {p.start_time} → {p.end_time}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
                     )}
 
                     <p className="mt-2 text-sm"><strong>Working Days:</strong> {result.time_slots.working_days?.join(", ")}</p>
+                    
+                    <div className="mt-3 p-2 bg-blue-100 border border-blue-200 rounded">
+                      <p className="text-xs text-blue-800">
+                        <strong>Note:</strong> Time slots have been transformed to match manual editor format. 
+                        All fields (period count, duration, breaks) are now pre-filled.
+                      </p>
+                    </div>
                   </div>
                 )}
 
@@ -436,11 +616,11 @@ const UploadPdf = () => {
 
             <div className="mt-4 flex items-center gap-3">
               <button
-                onClick={() => navigate("/dashboard/organisation-data-course")}
+                onClick={() => navigate(`/dashboard/organisation-data-taker/${courseId}/${year}/${semester}/data`)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white shadow hover:bg-blue-700 transition"
               >
                 <ArrowRightCircle className="w-4 h-4" />
-                Edit Manually
+                Go to Manual Editor
               </button>
 
               <button
