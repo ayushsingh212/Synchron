@@ -76,9 +76,9 @@ const router = createBrowserRouter(
       <Route
         path="dashboard"
         element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
           <DashboardLayout />
-          </ProtectedRoute> 
+          // </ProtectedRoute> 
         }
       >
         <Route path="organisation-info" element={<OrganisationInfo />} />

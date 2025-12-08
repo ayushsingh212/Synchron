@@ -9,24 +9,61 @@ import {
   Copy,
   Download,
   ArrowRightCircle,
+  FileSpreadsheet,
+  FileType,
 } from "lucide-react";
 import { API_BASE_URL, MODEL_BASE_URL, useAppState } from "../../config";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const UploadPdf = () => {
-    const {courseId,year,semester} = useParams()
+  const { courseId, year, semester } = useParams();
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState(null);
   const [done, setDone] = useState(false);
-  const [isDragging, setIsDragging] = useState(false); // drag hover state
-  const { hasOrganisationData, setHasOrganisationData } = useAppState()
+  const [isDragging, setIsDragging] = useState(false);
+  const { hasOrganisationData, setHasOrganisationData } = useAppState();
   const fileInputRef = useRef();
 
-  // Function to transform parsed time slots to match the manual editor structure
+  // Allowed file types
+  const ALLOWED_FILE_TYPES = [
+    'application/pdf',
+    'text/csv',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.oasis.opendocument.spreadsheet'
+  ];
+
+  // File type extensions
+  const FILE_EXTENSIONS = {
+    'application/pdf': 'PDF',
+    'text/csv': 'CSV',
+    'application/vnd.ms-excel': 'Excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Excel',
+    'application/vnd.oasis.opendocument.spreadsheet': 'ODS'
+  };
+
+  // Get file type icon
+  const getFileIcon = (fileType) => {
+    if (fileType === 'application/pdf') return <FileText className="w-5 h-5" />;
+    if (fileType === 'text/csv') return <FileSpreadsheet className="w-5 h-5" />;
+    return <FileType className="w-5 h-5" />;
+  };
+
+  // Check if file type is valid
+  const isValidFileType = (fileType) => {
+    return ALLOWED_FILE_TYPES.includes(fileType);
+  };
+
+  // Get file type display name
+  const getFileTypeName = (fileType) => {
+    return FILE_EXTENSIONS[fileType] || fileType;
+  };
+
+  // Transform parsed time slots to match the manual editor structure
   const transformTimeSlotsForManualEditor = (parsedTimeSlots) => {
     console.log("Transforming time slots:", parsedTimeSlots);
     
@@ -97,7 +134,6 @@ const UploadPdf = () => {
       if (duration < 20) {
         type = "shortBreak";
       } else if (duration > 30 && duration < 60) {
-        // Could be lunch break
         type = "lunchBreak";
       }
       
@@ -170,20 +206,22 @@ const UploadPdf = () => {
     return transformed;
   };
 
-  // handle file selection
+  // Handle file selection
   const handleFileChange = (e) => {
     const picked = e.target.files?.[0];
     if (!picked) return;
-    if (picked.type !== "application/pdf") {
-      toast.error("Please upload a PDF file only.");
+    
+    if (!isValidFileType(picked.type)) {
+      toast.error(`Please upload only PDF, CSV, or Excel files.`);
       return;
     }
+    
     setFile(picked);
     setResult(null);
     setDone(false);
   };
 
-  // handle drag events
+  // Handle drag events
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -197,20 +235,22 @@ const UploadPdf = () => {
 
     const picked = e.dataTransfer.files?.[0];
     if (!picked) return;
-    if (picked.type !== "application/pdf") {
-      toast.error("Please upload a PDF file only.");
+    
+    if (!isValidFileType(picked.type)) {
+      toast.error(`Please upload only PDF, CSV, or Excel files.`);
       return;
     }
+    
     setFile(picked);
     setResult(null);
     setDone(false);
   };
 
-  // handle upload
+  // Handle upload based on file type
   const handleUpload = async (e) => {
     e && e.preventDefault();
     if (!file) {
-      toast.warn("Please select a PDF file first.");
+      toast.warn("Please select a file first.");
       return;
     }
 
@@ -222,8 +262,18 @@ const UploadPdf = () => {
       setResult(null);
       setDone(false);
 
+      let endpoint = `${MODEL_BASE_URL}/parse-timetable`;
+      
+      // Use different endpoints for different file types if needed
+      // For now, using the same endpoint, but you can customize:
+      // if (file.type === 'text/csv') {
+      //   endpoint = `${MODEL_BASE_URL}/parse-csv-timetable`;
+      // } else if (file.type.includes('excel') || file.type.includes('spreadsheet')) {
+      //   endpoint = `${MODEL_BASE_URL}/parse-excel-timetable`;
+      // }
+
       const res = await axios.post(
-        `${MODEL_BASE_URL}/parse-timetable`,
+        endpoint,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -235,7 +285,7 @@ const UploadPdf = () => {
       const parsed = res?.data?.data;
       if (!parsed) {
         toast.error(
-          "Parsing returned no data. Please check the PDF or try again."
+          "Parsing returned no data. Please check the file or try again."
         );
         return;
       }
@@ -244,22 +294,22 @@ const UploadPdf = () => {
       const transformedResult = transformParsedResult(parsed);
       setResult(transformedResult);
       setDone(true);
-      toast.success("PDF parsed successfully — please verify the data below.");
+      toast.success(`${getFileTypeName(file.type)} parsed successfully — please verify the data below.`);
       console.log("Original parsed:", parsed);
       console.log("Transformed for editor:", transformedResult);
     } catch (error) {
       console.error("Upload/parse error:", error);
-      toast.error("Failed to parse PDF. Try again or upload a different file.");
+      toast.error("Failed to parse file. Try again or upload a different file.");
     } finally {
       setUploading(false);
     }
   };
 
-  // save parsed JSON
+  // Save parsed JSON
   const handleSave = async (e) => {
     e && e.preventDefault();
     if (!result) {
-      toast.error("No parsed result to save. Upload a PDF first.");
+      toast.error("No parsed result to save. Upload a file first.");
       return;
     }
 
@@ -286,7 +336,7 @@ const UploadPdf = () => {
           timeout: 60000,
         }
       );
-      setHasOrganisationData(true)
+      setHasOrganisationData(true);
       toast.success("Saved to database successfully!");
 
       setTimeout(() => {
@@ -300,7 +350,7 @@ const UploadPdf = () => {
     }
   };
 
-  // copy JSON to clipboard
+  // Copy JSON to clipboard
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(result, null, 2));
@@ -310,7 +360,7 @@ const UploadPdf = () => {
     }
   };
 
-  // download JSON
+  // Download JSON
   const handleDownload = () => {
     const blob = new Blob([JSON.stringify(result, null, 2)], {
       type: "application/json",
@@ -318,12 +368,12 @@ const UploadPdf = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${file?.name?.replace(/\.pdf$/i, "") || "timetable"}.json`;
+    a.download = `${file?.name?.replace(/\.[^/.]+$/, "") || "timetable"}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  // reset everything
+  // Reset everything
   const handleReset = () => {
     setFile(null);
     setResult(null);
@@ -334,27 +384,32 @@ const UploadPdf = () => {
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="bg-white shadow-2xl rounded-2xl w-full max-w-3xl p-8 border border-gray-200">
-           <div className="bg-blue-600 text-white p-4 rounded-b-xl shadow mb-6">
-        <h2 className="text-xl font-semibold">
-          Academic Data for Course: <span className="text-yellow-300">{courseId || "N/A"}</span>
-        </h2>
-        <p className="text-sm opacity-90">
-          Year: <span className="text-yellow-200 font-medium">{year || "N/A"}</span>
-        </p>
-         <p className="text-sm opacity-90">
-          Semester: <span className="text-yellow-200 font-medium">{semester || "N/A"}</span>
-        </p>
-      </div>
+        <div className="bg-blue-600 text-white p-4 rounded-b-xl shadow mb-6">
+          <h2 className="text-xl font-semibold">
+            Academic Data for Course: <span className="text-yellow-300">{courseId || "N/A"}</span>
+          </h2>
+          <p className="text-sm opacity-90">
+            Year: <span className="text-yellow-200 font-medium">{year || "N/A"}</span>
+          </p>
+          <p className="text-sm opacity-90">
+            Semester: <span className="text-yellow-200 font-medium">{semester || "N/A"}</span>
+          </p>
+        </div>
+        
         <div className="flex items-center justify-between mb-6">
-          
           <div>
             <h2 className="text-2xl font-extrabold text-gray-800">
-              Upload Organisation Details (PDF)
+              Upload Organisation Details
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Upload a timetable PDF — we'll attempt to parse it into structured
-              data.
+              Upload a timetable file (PDF, CSV, or Excel) — we'll parse it into structured data.
             </p>
+            <div className="flex items-center gap-2 mt-2 text-xs text-gray-600">
+              <span className="px-2 py-1 bg-gray-100 rounded">PDF</span>
+              <span className="px-2 py-1 bg-gray-100 rounded">CSV</span>
+              <span className="px-2 py-1 bg-gray-100 rounded">Excel</span>
+              <span className="px-2 py-1 bg-gray-100 rounded">ODS</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -391,13 +446,21 @@ const UploadPdf = () => {
               <div className="text-left">
                 <p className="font-medium text-gray-800">
                   {isDragging
-                    ? "Drop the PDF here..."
+                    ? "Drop the file here..."
                     : file
-                      ? file.name
-                      : "Click to upload or drag & drop your PDF"}
+                      ? (
+                        <div className="flex items-center gap-2">
+                          {getFileIcon(file.type)}
+                          <span>{file.name}</span>
+                          <span className="text-xs text-gray-500">
+                            ({getFileTypeName(file.type)})
+                          </span>
+                        </div>
+                      )
+                      : "Click to upload or drag & drop your file"}
                 </p>
                 <p className="text-xs text-gray-500">
-                  Only PDF files. Parsing may take a few seconds.
+                  Supported formats: PDF, CSV, Excel (.xls, .xlsx), ODS
                 </p>
               </div>
             </div>
@@ -406,11 +469,23 @@ const UploadPdf = () => {
               ref={fileInputRef}
               id="file"
               type="file"
-              accept="application/pdf"
+              accept=".pdf,.csv,.xls,.xlsx,.ods,application/pdf,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.spreadsheet"
               onChange={handleFileChange}
               className="hidden"
             />
           </div>
+
+          {file && (
+            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+              {getFileIcon(file.type)}
+              <div className="flex-1">
+                <p className="font-medium text-sm">{file.name}</p>
+                <p className="text-xs text-gray-500">
+                  {getFileTypeName(file.type)} • {(file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
@@ -423,7 +498,7 @@ const UploadPdf = () => {
               ) : (
                 <UploadCloud className="w-5 h-5" />
               )}
-              {uploading ? "Processing..." : "Upload & Extract"}
+              {uploading ? "Processing..." : `Parse ${file ? getFileTypeName(file.type) : 'File'}`}
             </button>
 
             <button
@@ -446,9 +521,13 @@ const UploadPdf = () => {
                   Parsed Data — please verify before saving
                 </h3>
                 <p className="text-sm text-gray-500">
-                  The model tries its best but may be wrong. Edit manually if
-                  needed.
+                  The model tries its best but may be wrong. Edit manually if needed.
                 </p>
+                {file && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Source: {file.name} ({getFileTypeName(file.type)})
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -485,7 +564,6 @@ const UploadPdf = () => {
 
             {result && (
               <div className="mt-8 space-y-6">
-
                 {/* College Info */}
                 {result.college_info && (
                   <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
@@ -609,10 +687,8 @@ const UploadPdf = () => {
                     ))}
                   </div>
                 )}
-
               </div>
             )}
-
 
             <div className="mt-4 flex items-center gap-3">
               <button
