@@ -72,7 +72,7 @@ const AuthorityDashboard = () => {
       
     } catch (error) {
       console.error('Dashboard load error:', error);
-      toast.error('Failed to load dashboard data');
+      // toast.error('Failed to load dashboard data');
       setState(prev => ({ ...prev, loading: false }));
     }
   };
@@ -265,6 +265,9 @@ const AuthorityDashboard = () => {
           icon={<Building className="h-8 w-8" />}
           color="indigo"
         />
+         <button onClick={()=>{
+          window.location.href ="http://localhost:5173/dashboard/organisation-info"
+         }}>Work as Senete</button>
       </div>
 
       {/* Filters and Search */}

@@ -56,7 +56,7 @@ const VariantRankModal = ({
                         Variant #{variant.rank || index + 1}
                         {variant._id === approvedVariantId && (
                           <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                            ✅ Approved
+                             Approved
                           </span>
                         )}
                       </p>
@@ -656,7 +656,7 @@ const TimeTableVariantViewer = () => {
                   </>
                 ) : (
                   <>
-                    <span>📊</span>
+                    {/* <span>📊</span> */}
                     Variants ({variants.length})
                   </>
                 )}
@@ -668,7 +668,7 @@ const TimeTableVariantViewer = () => {
                   onClick={() => handleApproveVariant(currentVariant._id)}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
                 >
-                  <span>✅</span>
+                  {/* <span>✅</span> */}
                   Approve This Variant
                 </button>
               )}
@@ -678,7 +678,7 @@ const TimeTableVariantViewer = () => {
                 onClick={handleRegenerate}
                 className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex items-center gap-2"
               >
-                <span>🔄</span>
+                {/* <span>🔄</span> */}
                 Regenerate
               </button>
             </div>
