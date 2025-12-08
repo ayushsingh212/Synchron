@@ -74,6 +74,9 @@ const DashboardLayout: React.FC = () => {
           <NavLink to="timetables" onClick={() => setSidebarOpen(false)} className={linkClasses}>
             Timetable Manager
           </NavLink>
+            <NavLink to="organisation-documents" onClick={() => setSidebarOpen(false)} className={linkClasses}>
+            Document Management
+          </NavLink>
         </nav>
 
         {/* <button

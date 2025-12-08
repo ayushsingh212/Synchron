@@ -48,6 +48,7 @@ import VariantListPage from "./pages/VariantListPage";
 import VariantViewerPage from "./pages/VariantViewerPage";
 import FacultyDashboard from "./pages/dashboard/Faculty/FacultyDashboard";
 import ProtectedRoute from "./components/ProtectRoute.jsx"
+import DocumentManagement from "./pages/dashboard/DocumentManagement";
 
 
 const router = createBrowserRouter(
@@ -79,6 +80,7 @@ const router = createBrowserRouter(
       >
         <Route path="organisation-info" element={<OrganisationInfo />} />
         <Route path="organisation-data-course" element={<CourseSelection />} />
+        <Route path= "organisation-documents" element={<DocumentManagement/>}/>
         <Route path="organisation-data-taker/:courseId/years" element={<YearSelection />} />
         <Route path="organisation-data-taker/:courseId/:year/:semester/data" element={<AcademicDataPage />} />
         <Route path="organisation-data-taker" element={<OrganisationDataTaker />} />
