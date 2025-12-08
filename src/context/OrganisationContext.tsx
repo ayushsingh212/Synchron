@@ -55,12 +55,14 @@ export const OrganisationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [getOrganisation]);
 
   useEffect(() => {
-    (async () => {
+    const init = async () => {
       setIsLoading(true);
       await getOrganisation();
       setIsLoading(false);
-    })();
+    };
+    init();
   }, [getOrganisation]);
+
 
   return (
     <OrganisationContext.Provider

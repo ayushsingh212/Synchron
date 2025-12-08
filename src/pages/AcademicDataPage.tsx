@@ -683,8 +683,11 @@ const OrganisationDataTaker = () => {
       
       if (res.data?.data) {
         toast.success("Generation Successful");
+//         navigate(
+//           `/dashboard/timetable/variants/${courseId}/${year}/${semester}`
+//         );
         navigate(
-          `/dashboard/timetable/variants/${courseId}/${year}/${semester}`
+          `/dashboard/timetable-viewer/${courseId}/${year}/${semester}`
         );
       }
     } catch (error: any) {

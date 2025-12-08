@@ -70,7 +70,7 @@ const HeroCarousel: React.FC = () => {
               aria-label={s.title}
             >
               <div className="max-w-6xl mx-auto px-6 text-center">
-                <div className="text-6xl mb-4">🚀</div>
+                {/* <div className="text-6xl mb-4">🚀</div> */}
 
                 <h1 className="text-4xl md:text-5xl font-extrabold leading-tight text-blue-600">
                   {s.title}

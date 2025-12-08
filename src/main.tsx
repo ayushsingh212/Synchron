@@ -47,7 +47,9 @@ import ForgotPassword from "./pages/ForgotPassword"
 import VariantListPage from "./pages/VariantListPage";
 import VariantViewerPage from "./pages/VariantViewerPage";
 import FacultyDashboard from "./pages/dashboard/Faculty/FacultyDashboard";
-import ProtectedRoute from "./components/ProtectRoute.jsx"
+import ProtectedRoute from "./components/ProtectRoute.jsx";
+import TimeTableVariantViewer from "./pages/dashboard/TimTableViewer";
+import AuthorityDashboard from "./pages/AuthorityDashboard.tsx";
 
 
 const router = createBrowserRouter(
@@ -67,14 +69,15 @@ const router = createBrowserRouter(
       {/* Access Denied */}
       <Route path="access-denied" element={<AccessDenied />} />
       <Route path="Faculty" element={<FacultyDashboard />} />
+      <Route path="Authority" element={<AuthorityDashboard />} />
 
-      {/* Dashboard (Protected) */}
+      {/* Dashboard (Protected) */} 
       <Route
         path="dashboard"
         element={
           <ProtectedRoute>
           <DashboardLayout />
-          </ProtectedRoute>
+          </ProtectedRoute> 
         }
       >
         <Route path="organisation-info" element={<OrganisationInfo />} />
@@ -88,10 +91,8 @@ const router = createBrowserRouter(
         <Route path="sectionTimeTable/:courseId/:year/:semester" element={<SectionTimeTable />} />
         <Route path="manage-timetable" element={<TimetableManager />} />
         <Route path="timetable/variants/:courseId/:year/:semester" element={<VariantListPage />} />
-        <Route path="timetable/variant/view/:id" element={<VariantViewerPage />} />
+        <Route path="/dashboard/timetable-viewer/:courseId/:year/:semester" element={<TimeTableVariantViewer />} />
       </Route>
-
-
     </Route>
   )
 );

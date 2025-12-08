@@ -29,9 +29,7 @@ const Hero: React.FC = () => {
     <section className="bg-blue-600 text-white py-24 md:py-32">
       <div className="max-w-6xl mx-auto px-6 text-center">
 
-        <div className="text-6xl md:text-7xl mb-6">🚀</div>
-
-        <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight">
+       <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight">
           The Smarter Way To Create
           <br />
           <span className="text-slate-100">Timetables</span>

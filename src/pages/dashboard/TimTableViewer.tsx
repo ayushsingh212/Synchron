@@ -1,791 +1,817 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { API_BASE_URL } from "../../config";
-import { toast } from "react-toastify";
+  import React, { useState, useEffect, useCallback } from "react";
+  import { useNavigate, useParams } from "react-router-dom";
+  import axios from "axios";
+  import { toast } from "react-toastify";
+  import { API_BASE_URL } from "../../config";
+  import jsPDF from "jspdf";
+  import autoTable from "jspdf-autotable";
+  import { saveAs } from "file-saver";
+  import ExcelJS from "exceljs";
+  import Papa from "papaparse";
 
-const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  // Days array
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-// --- NLP Update Modal Component ---
-const NLPUpdateModal = ({ 
-  isOpen, 
-  onClose, 
-  course, 
-  year, 
-  semester, 
-  organisation_id,
-  onUpdateSuccess 
-}) => {
-  const [nlpText, setNlpText] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [parsedResult, setParsedResult] = useState(null);
-  const [error, setError] = useState("");
-  const [step, setStep] = useState(1); // 1: input, 2: preview, 3: regenerating
+  // --- Variant Rank Selector Modal ---
+  const VariantRankModal = ({ 
+    variants, 
+    onClose, 
+    onSelectVariant, 
+    course, 
+    year, 
+    semester,
+    onApproveVariant,
+    approvedVariantId 
+  }) => {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white p-6 rounded-lg w-full max-w-4xl max-h-[80vh] overflow-y-auto shadow-2xl">
+          <div className="flex justify-between items-center border-b pb-3 mb-4">
+            <h2 className="text-xl font-bold text-gray-800">
+              Select Timetable Variant 
+            </h2>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl font-light">
+              &times;
+            </button>
+          </div>
+          
+          <p className="text-sm text-gray-600 mb-4">
+            Showing solutions for: {course?.toUpperCase()} / Year {year} / Semester {semester}
+          </p>
 
-  const parseNLPCommand = async () => {
-    if (!nlpText.trim()) {
-      setError("Please enter a command");
-      return;
-    }
-
-    if (!course || !year || !semester) {
-      setError("Course, Year, and Semester are required for NLP processing");
-      return;
-    }
-
-    setIsProcessing(true);
-    setError("");
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/nlp/parse`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          text: nlpText,
-          course,
-          year,
-          semester,
-          organisation_id
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.interpreted_data) {
-        setParsedResult(data.interpreted_data);
-        setStep(2); // Move to preview step
-        toast.info("NLP command parsed successfully!");
-      } else {
-        setError("No structured data returned from NLP parser");
-      }
-    } catch (err) {
-      console.error("NLP parsing error:", err);
-      setError(err.message || "Failed to process NLP command");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const applyEventsAndRegenerate = async () => {
-    setIsProcessing(true);
-    setStep(3); // Show regenerating step
-    
-    try {
-      const events = parsedResult?.events || [];
-      
-      const response = await fetch(`${API_BASE_URL}/api/regenerate-with-events`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          events,
-          course,
-          year,
-          semester,
-          organisation_id
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.solutions && data.solutions.length > 0) {
-        toast.success("Timetable regenerated successfully!");
-        onUpdateSuccess(data.solutions);
-        resetModal();
-        onClose();
-      } else {
-        throw new Error("No solutions returned from regeneration");
-      }
-    } catch (err) {
-      console.error("Regeneration error:", err);
-      setError(err.message || "Failed to regenerate timetable");
-      setStep(2); // Go back to preview step
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const resetModal = () => {
-    setNlpText("");
-    setParsedResult(null);
-    setError("");
-    setStep(1);
-    setIsProcessing(false);
-  };
-
-  const handleClose = () => {
-    resetModal();
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="flex justify-between items-center border-b pb-3 mb-4">
-          <h2 className="text-xl font-bold text-gray-800">
-            {step === 1 && "Update Timetable with NLP"}
-            {step === 2 && "Preview Changes"}
-            {step === 3 && "Regenerating Timetable..."}
-          </h2>
-          <button 
-            onClick={handleClose}
-            className="text-gray-500 hover:text-gray-800 text-2xl font-light"
-            disabled={isProcessing}
-          >
-            &times;
-          </button>
+          <div className="space-y-4">
+            {variants.length === 0 ? (
+              <p className="text-gray-500 p-4 text-center">No variants found. Generate a timetable first.</p>
+            ) : (
+              variants.map((variant, index) => (
+                <div 
+                  key={variant._id || index}
+                  className={`p-4 border rounded-lg ${variant._id === approvedVariantId ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-gray-50'} hover:bg-blue-50 transition cursor-pointer`}
+                  onClick={() => onSelectVariant(variant)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <p className="font-semibold text-lg">
+                          Variant #{variant.rank || index + 1}
+                          {variant._id === approvedVariantId && (
+                            <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                              ✅ Approved
+                            </span>
+                          )}
+                        </p>
+                        {variant.isApproved && (
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                            Approved
+                          </span>
+                        )}
+                      </div>
+                        
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                        <div className="text-sm">
+                          <span className="font-medium">Fitness Score:</span>
+                          <span className="ml-2 text-blue-600 font-bold">
+                            {variant.fitness?.toFixed(2) || variant.statistics?.fitness_score?.toFixed(2) || "N/A"}
+                          </span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium">Sections:</span>
+                          <span className="ml-2">
+                            {variant.statistics?.sections || (variant.sections ? Object.keys(variant.sections).length : "N/A")}
+                          </span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium">Faculty:</span>
+                          <span className="ml-2">
+                            {variant.statistics?.faculty || (variant.faculty ? Object.keys(variant.faculty).length : "N/A")}
+                          </span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium">Total Classes:</span>
+                          <span className="ml-2">
+                            {variant.statistics?.total_classes || "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                        <span>Course: {variant.course}</span>
+                        <span>•</span>
+                        <span>Year: {variant.year}</span>
+                        <span>•</span>
+                        <span>Semester: {variant.semester}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-2 ml-4">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectVariant(variant);
+                        }}
+                        className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap"
+                      >
+                        View This
+                      </button>
+                      
+                      {!variant.isApproved && variant._id !== approvedVariantId && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onApproveVariant(variant._id);
+                          }}
+                          className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 whitespace-nowrap"
+                        >
+                          Approve
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
+      </div>
+    );
+  };
 
-        {/* Step 1: Input NLP Command */}
-        {step === 1 && (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">
-                Enter your command in natural language:
-              </label>
-              <textarea
-                value={nlpText}
-                onChange={(e) => setNlpText(e.target.value)}
-                placeholder="Examples:
-                • 'Dr. Smith is absent on Monday and Tuesday'
-                • 'Room 101 is under maintenance this week'
-                • 'CSE-A section has field trip on Wednesday'
-                • 'Assign AI course to Dr. Johnson for CSE-B on Monday Period 1'
-                • 'No faculty should have more than 6 classes per day'"
-                className="w-full h-40 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                disabled={isProcessing}
-              />
+  // --- Main TimeTable Variant Viewer Component ---
+  const TimeTableVariantViewer = () => {
+    const { courseId, year, semester } = useParams();
+
+    const navigate = useNavigate();
+    
+    // State for variants and current selection
+    const [variants, setVariants] = useState([]);
+    const [currentVariant, setCurrentVariant] = useState(null);
+    const [approvedVariantId, setApprovedVariantId] = useState(null);
+    
+    // View states
+    const [viewType, setViewType] = useState("section"); // "section" or "faculty"
+    const [currentIndex, setCurrentIndex] = useState(0);
+    
+    // Loading and error states
+    const [loading, setLoading] = useState(true);
+    const [loadingVariants, setLoadingVariants] = useState(false);
+    const [error, setError] = useState(null);
+    
+    // Modal states
+    const [showVariantsModal, setShowVariantsModal] = useState(false);
+    
+    // Export states
+    const [exportType, setExportType] = useState("pdf");
+    const [allExportType, setAllExportType] = useState("pdf");
+    
+    // Subject colors for visualization
+    const subjectColors = {
+      MATH: "#FF9AA2",
+      PHYSICS: "#FFB7B2",
+      CHEMISTRY: "#FFDAC1",
+      BIOLOGY: "#E2F0CB",
+      ENGLISH: "#B5EAD7",
+      HISTORY: "#C7CEEA",
+      COMPUTER: "#F8B195",
+      FREE: "#F0F0F0",
+      DEFAULT: "#D8BFD8",
+    };
+
+    // Fetch all variants
+    const fetchVariants = useCallback(async () => {
+      if (!courseId || !year || !semester) return;
+      
+      setLoadingVariants(true);
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/timetable/solutions?course=${courseId}&year=${year}&semester=${semester}`,
+          { withCredentials: true }
+        );
+          console.log("Overall Response of",response)
+        if (response.data?.success) {
+          const variantsData = response.data.data?.solutions || [response.data.data].filter(Boolean);
+          
+          if (variantsData && variantsData.length > 0) {
+            // Sort by rank
+            const sortedVariants = [...variantsData].sort((a, b) => (a.rank || 0) - (b.rank || 0));
+            setVariants(sortedVariants);
+            
+            // Find approved variant
+            const approved = sortedVariants.find(v => v.isApproved);
+            if (approved) {
+              setApprovedVariantId(approved._id);
+              setCurrentVariant(approved);
+            } else if (sortedVariants[0]) {
+              setCurrentVariant(sortedVariants[0]);
+              console.log("Setting current variant to:",sortedVariants[0] )
+            }
+          } else {
+            setError("No timetable variants found. Please generate a timetable first.");
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching variants:", err);
+        toast.error("Failed to load timetable variants");
+        setError("Failed to load timetable data");
+      } finally {
+        setLoadingVariants(false);
+        setLoading(false);
+      }
+    }, [courseId, year, semester]);
+
+
+    const getCertainVariantById = useCallback(async (variantId) => {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/timetable/solution/${variantId}`,
+          { withCredentials: true }
+        );  
+        if (response.data?.success) {
+          console.log("Variant by ID Response:",response)
+          return response.data.data;
+        }
+      } catch (err) { 
+        console.error("Error fetching variant by ID:", err);
+        toast.error("Failed to load selected timetable variant");
+      }
+    }, []);
+
+  const loadFullData = async()=>{
+    try {
+        await fetchVariants();
+        // await getCertainVariantById(variants[0]._id);
+    } catch (error) {
+        console.error("Error loading full data:", error);
+    }
+
+
+
+  }
+
+    // Initial load
+    useEffect(() => {
+      // fetchVariants();
+      loadFullData();
+      //  getCertainVariantById(vari);
+    }, [fetchVariants]);
+
+    // Handle variant selection
+    const handleSelectVariant = (variant) => {
+      setCurrentVariant(variant);
+      setCurrentIndex(0);
+      setShowVariantsModal(false);
+      toast.success(`Switched to Variant #${variant.rank || 1}`);
+    };
+
+    // Handle approve variant
+    const handleApproveVariant = async (variantId) => {
+      try {
+        const response = await axios.post(
+          `${API_BASE_URL}/timetable/approve/${variantId}`,
+          {},
+          { withCredentials: true }
+        );
+        
+        if (response.data.success) {
+          toast.success("Timetable variant approved successfully!");
+          setApprovedVariantId(variantId);
+          
+          // Update variants list
+          setVariants(prev => prev.map(v => ({
+            ...v,
+            isApproved: v._id === variantId
+          })));
+          
+          // Update current variant if needed
+          if (currentVariant?._id === variantId) {
+            setCurrentVariant(prev => ({ ...prev, isApproved: true }));
+          }
+        }
+      } catch (err) {
+        console.error("Error approving variant:", err);
+        toast.error("Failed to approve variant");
+      }
+    };
+
+    // Get current items based on view type
+    const getCurrentItems = () => {
+      if (!currentVariant) return [];
+      
+      if (viewType === "section") {
+        console.log("Here are the sections",currentVariant)
+        return Object.values(currentVariant.sections || {});
+      } else {
+        return Object.values(currentVariant.faculty || {});
+      }
+    };
+
+    const currentItems = getCurrentItems();
+    const currentItem = currentItems[currentIndex] || {};
+
+    // Color functions
+    const getSubjectColor = (subject) => {
+      if (!subject || subject === "FREE" || subject === "LUNCH BREAK") return subjectColors.FREE;
+      
+      const subjectKey = Object.keys(subjectColors).find((key) =>
+        subject.toUpperCase().includes(key)
+      );
+      
+      return subjectColors[subjectKey] || subjectColors.DEFAULT;
+    };
+
+    const hexToRgb = (hex) => {
+      hex = hex.replace(/^#/, "");
+      const bigint = parseInt(hex, 16);
+      return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+    };
+
+    const getContrastYIQ = (hex) => {
+      hex = hex.replace(/^#/, "");
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+      return yiq >= 128 ? [0, 0, 0] : [255, 255, 255];
+    };
+
+    // Export functions
+    const exportCurrentToPDF = () => {
+      if (!currentItem || !currentItem.periods) return;
+      
+      const doc = new jsPDF();
+      const title = viewType === "section" 
+        ? `${currentItem.section_name || currentItem.section_id} - Semester ${semester}`
+        : `${currentItem.faculty_name} (${currentItem.department})`;
+      
+      // Title
+      doc.setFontSize(16);
+      doc.text(`Timetable: ${title}`, 14, 15);
+      doc.setFontSize(12);
+      doc.text(`Variant #${currentVariant?.rank || 1} • ${courseId} • Year ${year}`, 14, 22);
+      doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 28);
+
+      // Table Data
+      const tableColumn = ["Time", ...days];
+      const tableRows = [];
+
+      Object.entries(currentItem.periods || {}).forEach(([periodNum, time]) => {
+        const row = [time];
+        days.forEach((day) => {
+          const slot = currentItem.timetable?.[day]?.[periodNum] || "FREE";
+          if (typeof slot === "string") {
+            row.push(slot);
+          } else {
+            const details = [
+              slot.subject,
+              viewType === "section" ? slot.faculty_name : slot.section,
+              slot.room,
+              slot.type
+            ].filter(Boolean).join('\n');
+            row.push(details);
+          }
+        });
+        tableRows.push(row);
+      });
+
+      // Table with colors
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 35,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [66, 135, 245] },
+        didParseCell: (data) => {
+          if (data.section === "body" && data.column.index > 0) {
+            const subjectText = data.cell.raw;
+            const firstLine = subjectText.split("\n")[0];
+            const bgColor = getSubjectColor(firstLine);
+            data.cell.styles.fillColor = hexToRgb(bgColor);
+            data.cell.styles.textColor = getContrastYIQ(bgColor);
+          }
+        },
+      });
+
+      const fileName = viewType === "section"
+        ? `Timetable-${currentItem.section_id}-Variant-${currentVariant?.rank}.pdf`
+        : `Timetable-${currentItem.faculty_id}-Variant-${currentVariant?.rank}.pdf`;
+      
+      doc.save(fileName);
+    };
+
+    const exportAllToPDF = () => {
+      if (!currentVariant || !currentItems.length) return;
+      
+      const doc = new jsPDF();
+      const viewTitle = viewType === "section" ? "Sections" : "Faculty";
+      
+      currentItems.forEach((item, index) => {
+        if (index > 0) doc.addPage();
+        
+        const title = viewType === "section"
+          ? `${item.section_name || item.section_id} - Semester ${semester}`
+          : `${item.faculty_name} (${item.department})`;
+        
+        doc.setFontSize(16);
+        doc.text(`Timetable: ${title}`, 14, 15);
+        doc.setFontSize(12);
+        doc.text(`Variant #${currentVariant?.rank || 1} • ${courseId} • Year ${year}`, 14, 22);
+        doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 28);
+
+        const tableColumn = ["Time", ...days];
+        const tableRows = [];
+
+        Object.entries(item.periods || {}).forEach(([periodNum, time]) => {
+          const row = [time];
+          days.forEach((day) => {
+            const slot = item.timetable?.[day]?.[periodNum] || "FREE";
+            if (typeof slot === "string") {
+              row.push(slot);
+            } else {
+              const details = [
+                slot.subject,
+                viewType === "section" ? slot.faculty_name : slot.section,
+                slot.room,
+                slot.type
+              ].filter(Boolean).join('\n');
+              row.push(details);
+            }
+          });
+          tableRows.push(row);
+        });
+
+        autoTable(doc, {
+          head: [tableColumn],
+          body: tableRows,
+          startY: 35,
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [66, 135, 245] },
+          didParseCell: (data) => {
+            if (data.section === "body" && data.column.index > 0) {
+              const subjectText = data.cell.raw;
+              const firstLine = subjectText.split("\n")[0];
+              const bgColor = getSubjectColor(firstLine);
+              data.cell.styles.fillColor = hexToRgb(bgColor);
+              data.cell.styles.textColor = getContrastYIQ(bgColor);
+            }
+          },
+        });
+      });
+
+      doc.save(`All-${viewTitle}-Variant-${currentVariant?.rank}.pdf`);
+    };
+
+    const handleSingleExport = () => {
+      switch (exportType) {
+        case "pdf":
+          exportCurrentToPDF();
+          break;
+        default:
+          toast.info("Only PDF export is available in this view");
+      }
+    };
+
+    const handleAllExport = () => {
+      switch (allExportType) {
+        case "pdf":
+          exportAllToPDF();
+          break;
+        default:
+          toast.info("Only PDF export is available in this view");
+      }
+    };
+
+    // Navigation
+    const handlePrev = () => {
+      setCurrentIndex(prev => (prev - 1 + currentItems.length) % currentItems.length);
+    };
+
+    const handleNext = () => {
+      setCurrentIndex(prev => (prev + 1) % currentItems.length);
+    };
+
+    const handleViewChange = (type) => {
+      if (type === "section") {
+        navigate(`/dashboard/sectionTimeTable/${courseId}/${year}/${semester}`);
+      } else if (type === "faculty") {
+        navigate(`/dashboard/facultyTimeTable/${courseId}/${year}/${semester}`);
+      }
+    };
+
+    // Regenerate timetable
+    const handleRegenerate = async () => {
+      try {
+        toast.info("Regenerating timetable...");
+        const response = await axios.post(
+          `${API_BASE_URL}/timetable/generate`,
+          { course: courseId, year, semester },
+          { withCredentials: true }
+        );
+        
+        if (response.data.success) {
+          toast.success("Timetable regenerated successfully!");
+          fetchVariants(); // Refresh variants
+        }
+      } catch (err) {
+        console.error("Error regenerating timetable:", err);
+        toast.error("Failed to regenerate timetable");
+      }
+    };
+
+    if (loading) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading timetable variants...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (error || !currentVariant) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="text-center p-6 bg-white rounded-lg shadow-md max-w-md">
+            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">
+              No Timetable Found
+            </h2>
+            <p className="text-gray-600 mb-4">{error || "No timetable data available"}</p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleRegenerate}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Generate Timetable
+              </button>
+              <button
+                onClick={() => navigate("/dashboard/organisation-data-taker")}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Back to Data Entry
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        {/* Header Section */}
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-6">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
+              {/* Left: Title and Info */}
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Timetable Viewer
+                </h1>
+                <div className="flex flex-wrap items-center gap-2 mt-2 text-sm text-gray-600">
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                    {courseId?.toUpperCase()}
+                  </span>
+                  <span>•</span>
+                  <span>Year {year}</span>
+                  <span>•</span>
+                  <span>Semester {semester}</span>
+                  <span>•</span>
+                  <span className="font-medium">
+                    Variant #{currentVariant.rank || 1}
+                    {currentVariant._id === approvedVariantId && (
+                      <span className="ml-2 text-green-600">✓ Approved</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right: Action Buttons */}
+              <div className="flex flex-wrap gap-3">
+                {/* View Toggle */}
+                <select
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-gray-700"
+                  value={viewType}
+                  onChange={(e) => setViewType(e.target.value)}
+                >
+                  <option value="section">Section View</option>
+                  <option value="faculty">Faculty View</option>
+                </select>
+
+                {/* Variant Selector */}
+                <button
+                  onClick={() => setShowVariantsModal(true)}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  disabled={loadingVariants}
+                >
+                  {loadingVariants ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <span>📊</span>
+                      Variants ({variants.length})
+                    </>
+                  )}
+                </button>
+
+                {/* Approve Button */}
+                {currentVariant._id !== approvedVariantId && (
+                  <button
+                    onClick={() => handleApproveVariant(currentVariant._id)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                  >
+                    <span>✅</span>
+                    Approve This Variant
+                  </button>
+                )}
+
+                {/* Regenerate Button */}
+                <button
+                  onClick={handleRegenerate}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex items-center gap-2"
+                >
+                  <span>🔄</span>
+                  Regenerate
+                </button>
+              </div>
             </div>
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error}</p>
+            {/* Export Controls */}
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Export Current:</span>
+                <select
+                  value={exportType}
+                  onChange={(e) => setExportType(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value="pdf">PDF</option>
+                  <option value="excel">Excel</option>
+                  <option value="csv">CSV</option>
+                </select>
+                <button
+                  onClick={handleSingleExport}
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                >
+                  Download
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Export All {viewType === "section" ? "Sections" : "Faculty"}:</span>
+                <select
+                  value={allExportType}
+                  onChange={(e) => setAllExportType(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value="pdf">PDF</option>
+                  <option value="excel">Excel</option>
+                  <option value="csv">CSV</option>
+                </select>
+                <button
+                  onClick={handleAllExport}
+                  className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                >
+                  Download All
+                </button>
+              </div>
+            </div>
+
+            {/* Pagination Navigation */}
+            {currentItems.length > 1 && (
+              <div className="flex items-center justify-between mb-4 p-3 bg-gray-100 rounded-lg">
+                <button
+                  onClick={handlePrev}
+                  className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800"
+                >
+                  ← Previous
+                </button>
+
+                <div className="text-center">
+                  <span className="font-semibold text-blue-600">
+                    {currentIndex + 1} of {currentItems.length}
+                  </span>
+                  <p className="text-xs text-gray-500">
+                    {viewType === "section" ? "Sections" : "Faculty Members"}
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleNext}
+                  className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800"
+                >
+                  Next →
+                </button>
               </div>
             )}
 
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={handleClose}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                disabled={isProcessing}
-              >
-                Cancel
-              </button>
-              
-              <button
-                onClick={parseNLPCommand}
-                disabled={isProcessing || !nlpText.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? "Processing..." : "Parse & Preview"}
-              </button>
-            </div>
-          </>
-        )}
+            {/* Timetable Grid */}
+            <div className="overflow-x-auto border rounded-lg">
+              <div className="min-w-[800px] lg:min-w-full grid grid-cols-7 divide-x divide-gray-200 border-b border-gray-200">
+                {/* Header Row */}
+                <div className="bg-blue-600 p-3 font-semibold text-center text-white text-sm uppercase tracking-wide">
+                  Time
+                </div>
+                {days.map((day) => (
+                  <div
+                    key={day}
+                    className="bg-blue-600 p-3 font-semibold text-center text-white text-sm uppercase tracking-wide"
+                  >
+                    {day}
+                  </div>
+                ))}
 
-        {/* Step 2: Preview Parsed Events */}
-        {step === 2 && parsedResult && (
-          <>
-            <div className="mb-6">
-              <h3 className="font-semibold text-lg mb-3">Detected Changes:</h3>
-              
-              {/* Display Intent */}
-              <div className="mb-4">
-                <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-2">
-                  Intent: {parsedResult.intent}
-                </span>
-              </div>
+                {/* Body Rows */}
+                {Object.entries(currentItem.periods || {}).map(([periodNum, time]) => (
+                  <React.Fragment key={periodNum}>
+                    {/* Time Column */}
+                    <div className="p-3 border-b text-sm bg-gray-50 text-center font-medium text-gray-600">
+                      {time}
+                    </div>
 
-              {/* Display Events */}
-              {parsedResult.events && parsedResult.events.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="font-medium text-gray-700 mb-2">Events to Apply:</h4>
-                  <div className="space-y-3">
-                    {parsedResult.events.map((event, index) => (
-                      <div key={index} className="bg-gray-50 p-4 rounded-lg border">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium mb-2">
-                              {event.type.replace(/_/g, ' ').toUpperCase()}
+                    {/* Days Columns */}
+                    {days.map((day) => {
+                      const slot = currentItem.timetable?.[day]?.[periodNum] || "FREE";
+                      const backgroundColor = getSubjectColor(
+                        typeof slot === "string" ? slot : slot.subject
+                      );
+
+                      return (
+                        <div
+                          key={day + periodNum}
+                          className="p-3 border-b text-center text-sm min-h-[80px] flex flex-col justify-center"
+                          style={{ backgroundColor }}
+                        >
+                          {typeof slot === "string" ? (
+                            <span className="text-gray-600 font-medium">
+                              {slot === "LUNCH BREAK" ? "LUNCH" : slot}
                             </span>
-                            <div className="mt-2 space-y-1 text-sm">
-                              {event.faculty_id && (
-                                <div><span className="font-medium">Faculty:</span> {event.faculty_id}</div>
-                              )}
-                              {event.section_id && (
-                                <div><span className="font-medium">Section:</span> {event.section_id}</div>
-                              )}
-                              {event.room_id && (
-                                <div><span className="font-medium">Room:</span> {event.room_id}</div>
-                              )}
-                              {event.start_day && (
-                                <div><span className="font-medium">From:</span> {event.start_day}</div>
-                              )}
-                              {event.end_day && (
-                                <div><span className="font-medium">To:</span> {event.end_day}</div>
-                              )}
-                              {event.day && (
-                                <div><span className="font-medium">Day:</span> {event.day}</div>
-                              )}
-                              {event.timeslot && (
-                                <div><span className="font-medium">Period:</span> {event.timeslot}</div>
-                              )}
-                              {event.reason && (
-                                <div><span className="font-medium">Reason:</span> {event.reason}</div>
-                              )}
+                          ) : (
+                            <div className="space-y-1">
+                              <div className="font-bold text-gray-900">
+                                {slot.subject}
+                              </div>
+                              <div className="text-xs text-gray-700">
+                                {viewType === "section" ? slot.faculty_name : slot.section}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {slot.room} • {slot.type}
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Display Constraints */}
-              {parsedResult.constraints && (
-                <div className="mb-6">
-                  <h4 className="font-medium text-gray-700 mb-2">Constraints to Update:</h4>
-                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                    <pre className="text-xs whitespace-pre-wrap">
-                      {JSON.stringify(parsedResult.constraints, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              )}
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
 
-            <div className="flex justify-between gap-3">
-              <button
-                onClick={() => setStep(1)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                disabled={isProcessing}
-              >
-                ← Back
-              </button>
-              
-              <div className="flex gap-3">
-                <button
-                  onClick={handleClose}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  disabled={isProcessing}
-                >
-                  Cancel
-                </button>
+            {/* Footer Info */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-blue-100 border border-blue-300"></div>
+                    <span>Scheduled Class</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gray-100 border border-gray-300"></div>
+                    <span>Free Slot</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-yellow-100 border border-yellow-300"></div>
+                    <span>Lunch Break</span>
+                  </div>
+                </div>
                 
-                <button
-                  onClick={applyEventsAndRegenerate}
-                  disabled={isProcessing}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isProcessing ? "Applying..." : "Apply Changes & Regenerate"}
-                </button>
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">Fitness Score:</span>
+                  <span className="ml-2 text-blue-600 font-bold">
+                    {currentVariant.fitness?.toFixed(2) || currentVariant.statistics?.fitness_score?.toFixed(2) || "N/A"}
+                  </span>
+                </div>
               </div>
             </div>
-          </>
-        )}
-
-        {/* Step 3: Regenerating */}
-        {step === 3 && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 mb-2">Regenerating timetable with your changes...</p>
-            <p className="text-sm text-gray-500">This may take a few moments</p>
           </div>
+        </div>
+
+        {/* Variant Selection Modal */}
+        {showVariantsModal && (
+          <VariantRankModal
+            variants={variants}
+            onClose={() => setShowVariantsModal(false)}
+            onSelectVariant={handleSelectVariant}
+            onApproveVariant={handleApproveVariant}
+            course={courseId}
+            year={year}
+            semester={semester}
+            approvedVariantId={approvedVariantId}
+          />
         )}
-      </div>
-    </div>
-  );
-};
-
-// --- Variant Rank Selector Modal ---
-const VariantRankModal = ({ variants, onClose, onSelectVariant, course, year, semester }) => {
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl">
-        <div className="flex justify-between items-center border-b pb-3 mb-4">
-          <h2 className="text-xl font-bold text-gray-800">
-            Select Timetable Variant 🏆
-          </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl font-light">
-            &times;
-          </button>
-        </div>
-        
-        <p className="text-sm text-gray-600 mb-4">
-          Showing solutions for: {course.toUpperCase()} / Y{year} / S{semester}
-        </p>
-
-        <div className="space-y-3">
-          {variants.length === 0 ? (
-            <p className="text-gray-500">No other variants found.</p>
-          ) : (
-            variants.map((v, index) => (
-              <div 
-                key={v._id || index}
-                className="p-3 border rounded-lg bg-gray-50 flex justify-between items-center hover:bg-blue-50 transition cursor-pointer"
-                onClick={() => onSelectVariant(v.rank || index)}
-              >
-                <div>
-                  <p className="font-semibold text-lg">Variant Rank {v.rank || index + 1}</p>
-                  <p className="text-xs text-gray-600">Fitness: {v.fitness?.toFixed(2) || "N/A"}</p>
-                  <p className="text-xs text-gray-600">
-                    Sections: {v.total_sections || v.sections?.length || "N/A"} | 
-                    Faculty: {v.total_faculty || v.faculty?.length || "N/A"}
-                  </p>
-                </div>
-                <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap">
-                  View This Rank
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Main TimeTableViewer Component ---
-const TimeTableViewer = ({ 
-  type = "section", 
-  data = {}, 
-  course = "", 
-  year = "", 
-  semester = "", 
-  organisation_id = "",
-  onVariantChange,
-  onTimetableRegenerate,
-  currentVariant = 0,
-  totalVariants = 1
-}) => {
-  const [index, setIndex] = useState(0);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingSlot, setEditingSlot] = useState(null);
-  const [slotData, setSlotData] = useState({});
-  
-  // States for modals
-  const [showVariantsModal, setShowVariantsModal] = useState(false);
-  const [showNLPModal, setShowNLPModal] = useState(false);
-  const [variantRanks, setVariantRanks] = useState([]);
-  const [isFetchingRanks, setIsFetchingRanks] = useState(false);
-  
-  // Extract items from data
-  const items = Object.values(data || {});
-  const item = items[index] || {};
-
-  // Reset index when data changes
-  useEffect(() => {
-    setIndex(0);
-  }, [data]);
-
-  // Color function for slots
-  const getSubjectColor = (slot) => { 
-    if (!slot || slot === "FREE" || slot.subject === "FREE") return "#f0f0f0";
-    
-    // Generate consistent color based on subject
-    const colors = [
-      "#ffe6c4", "#c4e1ff", "#c4ffd9", 
-      "#ffc4e1", "#e1c4ff", "#fff8c4",
-      "#c4fff8", "#ffd9c4", "#e1ffc4"
-    ];
-    
-    if (typeof slot === "string") {
-      const hash = slot.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      return colors[hash % colors.length];
-    }
-    
-    const hash = (slot.subject || "").split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
-  };
-
-  // Format time
-  const formatTime = (timeStr) => {
-    if (!timeStr) return "";
-    const [hour, minute] = timeStr.split(":").map(Number);
-    const period = hour >= 12 ? "PM" : "AM";
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minute.toString().padStart(2, "0")} ${period}`;
-  };
-
-  // Export functions
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    autoTable(doc, {
-      head: [['Period', ...days]],
-      body: Object.entries(item.periods || {}).map(([p, time]) => [
-        time,
-        ...days.map(day => {
-          const slot = item.timetable?.[day]?.[p] || "FREE";
-          return typeof slot === "string" ? slot : `${slot.subject} (${slot.room})`;
-        })
-      ])
-    });
-    doc.save(`${item.section_id || item.faculty_name}_timetable.pdf`);
-  };
-
-  // Start edit function
-  const startEdit = (day, period, slot) => { 
-    setEditingSlot({ day, period });
-    setSlotData(typeof slot === "string" ? { subject: slot } : { ...slot });
-    setIsEditing(true); 
-  };
-
-  // Save edit function
-  const saveEdit = async () => { 
-    toast.info("Edit saved locally. Use NLP updates for permanent changes.");
-    setIsEditing(false); 
-  };
-
-  // Fetch variant ranks
-  const fetchVariantRanks = useCallback(async () => {
-    if (!course || !year || !semester) return;
-    
-    setIsFetchingRanks(true);
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/timetable/solutions?course=${course}&year=${year}&semester=${semester}`,
-        { credentials: "include" }
-      );
-      
-      if (!response.ok) throw new Error("Failed to fetch variants");
-      
-      const data = await response.json();
-      const solutions = data.data?.solutions || data.solutions || [];
-      const sortedVariants = solutions.sort((a, b) => (a.rank || 0) - (b.rank || 0));
-      
-      setVariantRanks(sortedVariants);
-    } catch (err) {
-      console.error("Error fetching variants:", err);
-      toast.error("Failed to load variant ranks");
-    } finally {
-      setIsFetchingRanks(false);
-    }
-  }, [course, year, semester]);
-
-  // Handle viewing variant ranks
-  const handleViewVariantRanks = () => {
-    if (variantRanks.length === 0) {
-      fetchVariantRanks();
-    }
-    setShowVariantsModal(true);
-  };
-
-  // Handle variant selection
-  const handleSelectVariant = (variantIndex) => {
-    setShowVariantsModal(false);
-    
-    if (typeof onVariantChange === 'function') {
-      onVariantChange(variantIndex);
-    } else {
-      toast.info(`Switched to variant ${variantIndex + 1}`);
-    }
-  };
-
-  // Handle NLP update success
-  const handleNLPUpdateSuccess = (solutions) => {
-    setShowNLPModal(false);
-    
-    if (typeof onTimetableRegenerate === 'function' && solutions.length > 0) {
-      // Transform the first solution to match the expected data format
-      const firstSolution = solutions[0];
-      
-      if (type === "section") {
-        // Convert sections array to object with section_id as keys
-        const sectionsData = {};
-        if (firstSolution.sections && Array.isArray(firstSolution.sections)) {
-          firstSolution.sections.forEach(section => {
-            if (section.section_id) {
-              sectionsData[section.section_id] = section;
-            }
-          });
-        }
-        
-        // Update variant ranks
-        const newVariants = solutions.map((sol, idx) => ({
-          _id: `regenerated-${idx}`,
-          rank: idx + 1,
-          fitness: sol.fitness || 0,
-          sections: sol.sections || [],
-          faculty: sol.faculty || []
-        }));
-        
-        setVariantRanks(newVariants);
-        onTimetableRegenerate(sectionsData, newVariants);
-        
-      } else if (type === "faculty") {
-        // Convert faculty array to object with faculty_id as keys
-        const facultyData = {};
-        if (firstSolution.faculty && Array.isArray(firstSolution.faculty)) {
-          firstSolution.faculty.forEach(faculty => {
-            if (faculty.faculty_id) {
-              facultyData[faculty.faculty_id] = faculty;
-            }
-          });
-        }
-        
-        // Update variant ranks
-        const newVariants = solutions.map((sol, idx) => ({
-          _id: `regenerated-${idx}`,
-          rank: idx + 1,
-          fitness: sol.fitness || 0,
-          sections: sol.sections || [],
-          faculty: sol.faculty || []
-        }));
-        
-        setVariantRanks(newVariants);
-        onTimetableRegenerate(facultyData, newVariants);
-      }
-    }
-    
-    toast.success("Timetable updated successfully!");
-  };
-
-  if (!item || Object.keys(item).length === 0) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        <p>No timetable data available</p>
-        <p className="text-sm mt-2">Generate a timetable first or select a variant</p>
       </div>
     );
-  }
+  };
 
-  return (
-    <div className="p-4 bg-white rounded-xl shadow">
-      
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-gray-800">
-            {type === "faculty"
-              ? `${item.faculty_name || 'Faculty'} (${item.department || 'N/A'})`
-              : `${item.section_id || 'Section'} - ${item.section_name || 'N/A'}`}
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {course} • Year {year} • Semester {semester}
-          </p>
-        </div>
-
-        {/* ACTION BUTTONS */}
-        <div className="flex flex-wrap gap-2">
-          {/* NLP Update Button */}
-          <button 
-            onClick={() => setShowNLPModal(true)}
-            className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition whitespace-nowrap shadow-md flex items-center gap-2"
-            title="Update timetable using natural language"
-          >
-            <span>✨</span> NLP Update
-          </button>
-
-          {/* Variant Ranks Button */}
-          <button 
-            onClick={handleViewVariantRanks} 
-            className="px-4 py-2 text-sm font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition whitespace-nowrap flex items-center gap-2"
-            disabled={isFetchingRanks}
-          >
-            <span>🏆</span>
-            {isFetchingRanks ? 'Loading...' : `Variant ${currentVariant + 1}/${totalVariants}`}
-          </button>
-
-          {/* Export Buttons */}
-          <button onClick={exportPDF} className="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 flex items-center gap-2">
-            <span>📄</span> PDF
-          </button>
-        </div>
-      </div>
-      
-      {/* PAGINATION (for multiple sections/faculty) */}
-      {items.length > 1 && (
-        <div className="flex justify-between items-center mb-4 p-3 bg-gray-50 rounded-lg">
-          <button 
-            onClick={() => setIndex((i) => (i - 1 + items.length) % items.length)}
-            className="p-2 border rounded-lg hover:bg-white flex items-center gap-2"
-          >
-            ← Previous
-          </button>
-          <div className="text-center">
-            <span className="font-semibold text-blue-600">
-              {index + 1} of {items.length}
-            </span>
-            <p className="text-xs text-gray-500">
-              {type === "section" ? "Sections" : "Faculty Members"}
-            </p>
-          </div>
-          <button 
-            onClick={() => setIndex((i) => (i + 1) % items.length)}
-            className="p-2 border rounded-lg hover:bg-white flex items-center gap-2"
-          >
-            Next →
-          </button>
-        </div>
-      )}
-      
-      {/* TIMETABLE GRID */}
-      <div className="overflow-x-auto border rounded-lg">
-        <table className="min-w-full table-auto border-collapse">
-          <thead>
-            <tr className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-              <th className="border p-3 text-left w-32">Period / Time</th>
-              {days.map((d) => (
-                <th key={d} className="border p-3 text-center">
-                  {d}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(item.periods || {}).map(([periodId, time]) => (
-              <tr key={periodId} className="hover:bg-gray-50">
-                <td className="border p-3 bg-gray-50 font-medium text-center">
-                  <div>Period {periodId}</div>
-                  <div className="text-xs text-gray-500">{formatTime(time)}</div>
-                </td>
-
-                {days.map((day) => {
-                  const slot = item.timetable?.[day]?.[periodId] || "FREE";
-                  const isFree = !slot || slot === "FREE" || slot.subject === "FREE";
-                  
-                  return (
-                    <td
-                      key={`${day}-${periodId}`}
-                      className="border p-3 cursor-pointer transition-all hover:shadow-md"
-                      onClick={() => startEdit(day, periodId, slot)}
-                      style={{ 
-                        backgroundColor: getSubjectColor(slot),
-                        borderLeft: isFree ? '1px solid #e5e7eb' : `4px solid ${getSubjectColor(slot).replace('0.8', '1')}`
-                      }}
-                    >
-                      {isFree ? (
-                        <div className="text-center text-gray-400 py-2">
-                          FREE
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <div className="font-semibold text-gray-800">
-                            {slot.subject || "N/A"}
-                          </div>
-                          <div className="text-xs text-gray-700">
-                            {slot.room && `📍 ${slot.room}`}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {slot.faculty_name && `👨‍🏫 ${slot.faculty_name}`}
-                            {slot.section && ` | 📚 ${slot.section}`}
-                            {slot.type && ` | ${slot.type}`}
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* FOOTER INFO */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-100 border border-blue-300"></div>
-            <span>Scheduled Class</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-100 border border-gray-300"></div>
-            <span>Free Slot</span>
-          </div>
-          <div className="ml-auto text-sm">
-            <span className="font-medium">Last Updated:</span> {new Date().toLocaleDateString()}
-          </div>
-        </div>
-      </div>
-
-      {/* NLP MODAL */}
-      <NLPUpdateModal
-        isOpen={showNLPModal}
-        onClose={() => setShowNLPModal(false)}
-        course={course}
-        year={year}
-        semester={semester}
-        organisation_id={organisation_id}
-        onUpdateSuccess={handleNLPUpdateSuccess}
-      />
-
-      {/* VARIANT RANK MODAL */}
-      {showVariantsModal && (
-        <VariantRankModal
-          variants={variantRanks}
-          onClose={() => setShowVariantsModal(false)}
-          onSelectVariant={handleSelectVariant}
-          course={course}
-          year={year}
-          semester={semester}
-        />
-      )}
-      
-      {/* EDIT MODAL */}
-      {isEditing && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Edit Slot</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Subject</label>
-                <input
-                  type="text"
-                  value={slotData.subject || ""}
-                  onChange={(e) => setSlotData({...slotData, subject: e.target.value})}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Room</label>
-                <input
-                  type="text"
-                  value={slotData.room || ""}
-                  onChange={(e) => setSlotData({...slotData, room: e.target.value})}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-            </div>
-            <div className="flex justify-between mt-6">
-              <button 
-                onClick={() => setIsEditing(false)} 
-                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => setSlotData({ subject: "FREE" })} 
-                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-              >
-                Mark Free
-              </button>
-              <button 
-                onClick={saveEdit} 
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default TimeTableViewer;
+  export default TimeTableVariantViewer;

@@ -1,12 +1,21 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-const YearSelection = () => {
+const YearSelection: React.FC = () => {
   const navigate = useNavigate();
-  const { courseId } = useParams();
+  const { courseId } = useParams<{ courseId: string }>();
 
-  const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
-  const [selectedYear, setSelectedYear] = useState("");
+  // Define years per course - use lowercase keys for consistency
+  const courseYearsMap: Record<string, string[]> = {
+    "b.tech": ["1st Year", "2nd Year", "3rd Year", "4th Year"],
+    "m.tech": ["1st Year", "2nd Year"],
+    "mca": ["1st Year", "2nd Year", "3rd Year"],
+  };
+
+  // Normalize the courseId to match the map keys (case-insensitive)
+  const normalizedCourseId = courseId?.toLowerCase().trim() || "";
+  const years = courseYearsMap[normalizedCourseId] || [];
+  const [selectedYear, setSelectedYear] = useState<string>("");
 
   const getSemesters = (year: string) => {
     const index = years.indexOf(year);
