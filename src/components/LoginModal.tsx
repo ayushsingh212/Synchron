@@ -154,8 +154,8 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
 
       window.dispatchEvent(new CustomEvent("close-both-modal"));
 
-      if (loginRole === "authority") navigate("/dashboard/organisation-info");
-      else navigate("/dashboard/manage-content");
+      if (loginRole === "authority") navigate("/authority-dashboard/management-panel");
+      else navigate("/dashboard/organisation-info");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Login failed");
     } finally {
