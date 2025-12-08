@@ -47,8 +47,10 @@ import ForgotPassword from "./pages/ForgotPassword"
 import VariantListPage from "./pages/VariantListPage";
 import VariantViewerPage from "./pages/VariantViewerPage";
 import FacultyDashboard from "./pages/dashboard/Faculty/FacultyDashboard";
-import ProtectedRoute from "./components/ProtectRoute.jsx"
+import ProtectedRoute from "./components/ProtectRoute"
 import DocumentManagement from "./pages/dashboard/DocumentManagement";
+import AuthorityDashboard from "./pages/AuthorityDashboard";
+import TimeTableVariantViewer from "./pages/dashboard/TimTableViewer";
 
 
 const router = createBrowserRouter(

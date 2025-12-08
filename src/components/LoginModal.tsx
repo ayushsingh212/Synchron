@@ -12,9 +12,7 @@ const useDebounce = (callback: Function, delay: number) => {
 
   const debouncedFunction = useCallback(
     (...args: any[]) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
         callback(...args);
       }, delay);
@@ -24,9 +22,7 @@ const useDebounce = (callback: Function, delay: number) => {
 
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
@@ -40,17 +36,17 @@ interface Props {
 
 const LoginModal: React.FC<Props> = ({ open, onClose }) => {
   const [loginMethod, setLoginMethod] = useState<"password" | "otp">("password");
-  const [loginRole, setLoginRole] = useState<'authority' | 'senet'>('authority');
-  
+  const [loginRole, setLoginRole] = useState<"authority" | "senet">("authority");
+
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
-  
+
   const { getOrganisation } = useOrganisation();
 
   const [formData, setFormData] = useState({
-    email: "",
-    contactNumber: "",
+    organisationEmail: "",
+    organisationContactNumber: "",
     password: "",
     otp: "",
   });
@@ -61,40 +57,32 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
 
   const requestOtp = async () => {
     try {
-      if (!formData.email) {
-        toast.error("Please enter your email");
+      if (!formData.organisationEmail) {
+        toast.error("Please enter your organisationEmail");
         return;
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        toast.error("Please enter a valid email address");
+      const organisationEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!organisationEmailRegex.test(formData.organisationEmail)) {
+        toast.error("Please enter a valid organisationEmail address");
         return;
       }
 
       setOtpLoading(true);
-       
-      if(role==="authority") {
-          await axios.post(
-        `${API_BASE_URL}/verification/getOtp/login-authority`,
-        { 
-          email: formData.email,
-          role: loginRole // Send role for OTP verification
-        },
-        { withCredentials: true }
-      );
+
+      if (loginRole === "authority") {
+        await axios.post(
+          `${API_BASE_URL}/verification/getOtp/login`,
+          { organisationEmail: formData.organisationEmail },
+          { withCredentials: true }
+        );
+      } else {
+        await axios.post(
+          `${API_BASE_URL}/verification/getOtp/login`,
+          { organisationEmail: formData.organisationEmail, role: "senate" },
+          { withCredentials: true }
+        );
       }
-      else{
-         await axios.post(
-        `${API_BASE_URL}/verification/getOtp/login-authority`,
-        { 
-          email: formData.email,
-          role: loginRole // Send role for OTP verification
-        },
-        { withCredentials: true }
-      );
-      }
-  
 
       toast.success("OTP sent successfully");
     } catch (err: any) {
@@ -108,78 +96,66 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
 
   const submitForm = async () => {
     try {
-      // Validation
+      setLoading(true);
+      let response;
+
       if (loginMethod === "password") {
-        if (!formData.email && !formData.contactNumber) {
-          toast.error("Please enter email or contact number");
-          return;
-        }
-        if (!formData.password) {
-          toast.error("Please enter password");
-          return;
+        if (loginRole === "authority") {
+          const loginData = {
+            organisationEmailOrorganisationContactNumber:
+              formData.organisationEmail || formData.organisationContactNumber,
+            password: formData.password,
+          };
+
+          response = await axios.post(
+            `${API_BASE_URL}/organisation/login`,
+            loginData,
+            { withCredentials: true }
+          );
+        } else {
+          const loginData = {
+            organisationEmail: formData.organisationEmail,
+            senateId: formData.organisationContactNumber,
+            password: formData.password,
+          };
+
+          response = await axios.post(
+            `${API_BASE_URL}/senate/login`,
+            loginData,
+            { withCredentials: true }
+          );
         }
       } else {
-        if (!formData.email) {
-          toast.error("Please enter email");
-          return;
-        }
         if (!formData.otp) {
           toast.error("Please enter OTP");
           return;
         }
-      }
 
-      setLoading(true);
-      
-      // Prepare login data with role
-      const loginData = {
-        ...formData,
-        role: loginRole
-      };
+        const loginData = {
+          organisationEmail: formData.organisationEmail,
+          otp: formData.otp,
+          role: loginRole,
+        };
 
-      // Remove empty fields
-      Object.keys(loginData).forEach(key => {
-        if (loginData[key] === "") {
-          delete loginData[key];
-        }
-      });
-     if(role==="authority") {
-         const response = await axios.post(
-        `${API_BASE_URL}/organisation/login`, 
-        loginData, 
-        { withCredentials: true }
+        response = await axios.post(
+          `${API_BASE_URL}/organisation/login`,
+          loginData,
+          { withCredentials: true }
         );
-        console.log(response)
-      } 
-      else{
-          const response = await axios.post(
-        `${API_BASE_URL}/senate/login`, 
-        loginData, 
-        { withCredentials: true }
-      );
       }
-   
 
       toast.success("Login successful");
 
-      // Store user role in context/local storage
-      if (response.data.role) {
-        localStorage.setItem('userRole', response.data.role);
-        localStorage.setItem('organisationId', response.data.organisationId || '');
-      }
+      localStorage.setItem("userRole", loginRole);
+      if (response.data.organisationId)
+        localStorage.setItem("organisationId", response.data.organisationId);
 
-      // Get organisation data
       await getOrganisation();
 
       window.dispatchEvent(new CustomEvent("close-both-modal"));
-      
-      // Redirect based on role
-      if (loginRole === 'authority') {
-        navigate("/dashboard/organisation-info");
-      } else {
-        navigate("/dashboard/manage-content");
-      }
-      
+
+      if (loginRole === "authority") navigate("/dashboard/organisation-info");
+      else navigate("/dashboard/manage-content");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Login failed");
     } finally {
@@ -189,24 +165,21 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loading) {
-      submitForm();
-    }
+    if (!loading) submitForm();
   };
 
-  // Reset form when modal opens/closes
   useEffect(() => {
     if (!open) {
       setFormData({
-        email: "",
-        contactNumber: "",
+        organisationEmail: "",
+        organisationContactNumber: "",
         password: "",
         otp: "",
       });
       setLoading(false);
       setOtpLoading(false);
-      setLoginRole('authority');
-      setLoginMethod('password');
+      setLoginRole("authority");
+      setLoginMethod("password");
     }
   }, [open]);
 
@@ -224,41 +197,41 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
         Organisation Login
       </h2>
 
-      {/* Role Selection */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Login as:
         </label>
+
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => setLoginRole('authority')}
+            onClick={() => setLoginRole("authority")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 transition-all ${
-              loginRole === 'authority'
-                ? 'border-blue-600 bg-blue-50 text-blue-700'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400'
+              loginRole === "authority"
+                ? "border-blue-600 bg-blue-50 text-blue-700"
+                : "border-gray-300 bg-white text-gray-700 hover:border-blue-400"
             }`}
           >
             <Shield size={18} />
             <span>Authority</span>
           </button>
+
           <button
             type="button"
-            onClick={() => setLoginRole('senet')}
+            onClick={() => setLoginRole("senet")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 transition-all ${
-              loginRole === 'senet'
-                ? 'border-blue-600 bg-blue-50 text-blue-700'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400'
+              loginRole === "senet"
+                ? "border-blue-600 bg-blue-50 text-blue-700"
+                : "border-gray-300 bg-white text-gray-700 hover:border-blue-400"
             }`}
           >
             <Briefcase size={18} />
             <span>Senet</span>
           </button>
         </div>
-        
-        {/* Role Description */}
+
         <div className="mt-3 text-xs text-gray-500">
-          {loginRole === 'authority' ? (
+          {loginRole === "authority" ? (
             <p>✓ Organisation administrator with full access</p>
           ) : (
             <p>✓ Manage organisation content and operations</p>
@@ -266,7 +239,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
         </div>
       </div>
 
-      {/* Login Method Selection */}
       <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
         <button
           type="button"
@@ -295,26 +267,23 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
       <form className="space-y-6" onSubmit={handleSubmit}>
         {loginMethod === "password" ? (
           <>
-            {/* Email Input */}
             <div className="relative">
               <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
               <input
                 type="text"
-                name="email"
-                value={formData.email}
+                name="organisationEmail"
+                value={formData.organisationEmail}
                 onChange={handleChange}
                 placeholder={
-                  loginRole === 'authority' 
-                    ? "Organisation Email" 
-                    : "Your Email"
+                  loginRole === "authority"
+                    ? "Organisation Email"
+                    : "Your Organisation Email"
                 }
                 className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
                 disabled={loading}
               />
             </div>
 
-
-            {/* Password Input */}
             <div className="relative">
               <Lock className="absolute left-4 top-3.5 text-blue-600 h-5" />
               <input
@@ -327,29 +296,17 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
                 disabled={loading}
               />
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                navigate("/forgot-password");
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition"
-            >
-              Forgot Password?
-            </button>
           </>
         ) : (
           <>
-            {/* OTP Login Email Input */}
             <div className="relative">
               <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
               <input
                 type="email"
-                name="email"
-                value={formData.email}
+                name="organisationEmail"
+                value={formData.organisationEmail}
                 onChange={handleChange}
-                placeholder="Enter your email"
+                placeholder="Enter your organisationEmail"
                 className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
                 disabled={loading || otpLoading}
               />
@@ -373,7 +330,7 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
               <button
                 type="button"
                 onClick={() => debouncedRequestOtp()}
-                disabled={loading || otpLoading || !formData.email}
+                disabled={loading || otpLoading || !formData.organisationEmail}
                 className="px-4 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
                 {otpLoading ? "Sending..." : "Get OTP"}
@@ -390,7 +347,7 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
           {loading
             ? "Processing..."
             : loginMethod === "password"
-            ? `Login as ${loginRole === 'authority' ? 'Authority' : 'Senet'}`
+            ? `Login as ${loginRole === "authority" ? "Authority" : "Senet"}`
             : "Verify & Login"}
         </button>
       </form>
