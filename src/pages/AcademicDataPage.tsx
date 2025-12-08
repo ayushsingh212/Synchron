@@ -683,6 +683,15 @@ const OrganisationDataTaker = () => {
       
       if (res.data?.data) {
         toast.success("Generation Successful");
+        
+        await axios.post(`${API_BASE_URL}/request/send`,{
+            year,
+            course:courseId,
+            semester
+        },{
+          withCredentials:true
+        })
+  toast.success("Your Timetable sent for approval")
 //         navigate(
 //           `/dashboard/timetable/variants/${courseId}/${year}/${semester}`
 //         );

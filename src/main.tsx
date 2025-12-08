@@ -53,6 +53,7 @@ import AuthorityDashboard from "./pages/AuthorityDashboard";
 import TimeTableVariantViewer from "./pages/dashboard/TimTableViewer";
 import AuthorityDashboardLayout from "./pages/dashboard/AuthorityDashboard";
 import AssignSenete from "./components/authority/AssignSenete";
+import ManageApprovals from "./components/authority/ManageApproval";
 
 
 const router = createBrowserRouter(
@@ -77,7 +78,7 @@ const router = createBrowserRouter(
           <Route path="manage-variants/:courseId/:year/:semester" element={<TimeTableVariantViewer />} />
       <Route  path="manage-senetes" element ={<AssignSenete/>} />
         <Route path= "manage-documents" element={<DocumentManagement/>}/>
-      
+         <Route path = "manage-approvals" element = {<ManageApprovals/>}/>
       </Route>
 
       {/* Dashboard (Protected) */} 
