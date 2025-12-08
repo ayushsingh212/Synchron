@@ -51,6 +51,8 @@ import ProtectedRoute from "./components/ProtectRoute"
 import DocumentManagement from "./pages/dashboard/DocumentManagement";
 import AuthorityDashboard from "./pages/AuthorityDashboard";
 import TimeTableVariantViewer from "./pages/dashboard/TimTableViewer";
+import AuthorityDashboardLayout from "./pages/dashboard/AuthorityDashboard";
+import AssignSenete from "./components/authority/AssignSenete";
 
 
 const router = createBrowserRouter(
@@ -70,7 +72,13 @@ const router = createBrowserRouter(
       {/* Access Denied */}
       <Route path="access-denied" element={<AccessDenied />} />
       <Route path="Faculty" element={<FacultyDashboard />} />
-      <Route path="Authority" element={<AuthorityDashboard />} />
+      <Route path="authority-dashboard" element={<AuthorityDashboardLayout />} >
+       <Route path="management-panel" element= {<AuthorityDashboard/>}/>
+      
+      <Route  path="manage-senetes" element ={<AssignSenete/>} />
+        <Route path= "manage-documents" element={<DocumentManagement/>}/>
+      
+      </Route>
 
       {/* Dashboard (Protected) */} 
       <Route

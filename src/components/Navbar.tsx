@@ -63,8 +63,11 @@ const Navbar: React.FC = () => {
           <nav className="flex items-center gap-6 text-sm md:text-base font-semibold">
             {organisation ? (
               <>
-                <Link
-                  to="/dashboard/organisation-info"
+                <button
+                
+                  onClick={()=>{
+                    organisation.role ==="authority" ? navigate("/authority-dashboard/management-panel"):navigate("/dashboard/organisation-info")
+                  }}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
                 >
                   <svg
@@ -76,7 +79,7 @@ const Navbar: React.FC = () => {
                     <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
                   </svg>
                   Dashboard
-                </Link>
+                </button>
                 <button
                   onClick={handleLogout}
                   className="px-4 py-2 rounded-lg text-blue-600 border border-blue-500 hover:bg-blue-50 transition"
