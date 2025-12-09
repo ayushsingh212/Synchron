@@ -270,7 +270,8 @@ const AuthorityDashboard = () => {
           navigate("/dashboard/organisation-info")
          }}>Work as Senete</button>
       </div>
-
+    
+    
       {/* Filters and Search */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
