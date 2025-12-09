@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ExcelJS from "exceljs";
 import Papa from "papaparse";
 import { API_BASE_URL } from "../../config";
@@ -33,7 +33,11 @@ const FacultyTimeTable = () => {
 const {hasOrganisationData,setHasOrganisationData,currentlyViewedTimtable} = useOrganisation()
  
 const {semester,year,courseId} = useParams()
- 
+ const location = useLocation();
+ const {organisationEmail,isBlocked} = location?.state || {
+  organisationEmail:"",
+  isBlocked:false
+ }
 console.log("Here are the params",semester,year,courseId)
 // console.log("Here is the currently viewed timetable",currentlyViewedTimtable)
 // console.log("Do i have saved data",hasOrganisationData)  
@@ -83,10 +87,16 @@ const fetchSavedTimetable = async () => {
   try {
     setLoading(true);
 
-    const res = await axios.get(
-      `${API_BASE_URL}/timetable/facultyTimeTable/getSpecific?course=${courseId?.trim().toLowerCase()}&year=${year?.trim().toLowerCase()}&semester=${semester?.trim().toLowerCase()}`,
+
+   const res = isBlocked ? ( await axios.get(
+      `${API_BASE_URL}/timetable/facultyTime?course=${courseId?.trim().toLowerCase()}&year=${year?.trim().toLowerCase()}&semester=${semester?.trim().toLowerCase()}&organisationEmail=${organisationEmail}`,
       { withCredentials: true }
-    );
+    )):(  await axios.get(
+      `${API_BASE_URL}/timetable/facultyTimeTable/getSpecific?course=${courseId?.trim().toLowerCase()}&year=${year?.trim().toLowerCase()}&semester=${semester?.trim().toLowerCase()}&organisationEmail=${organisationEmail}`,
+      { withCredentials: true }
+    ))
+
+  
 
     if (res.data?.data?.faculty) {
       setFaculties(Object.values(res.data.data.faculty));
@@ -665,6 +675,7 @@ const fetchSavedTimetable = async () => {
                 className="border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:ring-2 focus:ring-blue-500"
                 onChange={handleChange}
                 value="faculty" // Set to faculty
+                disabled = {isBlocked? true:false}
               >
                 <option value="faculty">Faculty Timetable</option>
                 <option value="section">Section Timetable</option>

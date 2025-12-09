@@ -696,8 +696,7 @@ const OrganisationDataTaker = () => {
 //           `/dashboard/timetable/variants/${courseId}/${year}/${semester}`
 //         );
         navigate(
-          `/dashboard/timetable-viewer/${courseId}/${year}/${semester}`
-        );
+          `/dashboard/timetable-sent`);
       }
     } catch (error: any) {
       toast.error(

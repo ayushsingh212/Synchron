@@ -54,6 +54,8 @@ import TimeTableVariantViewer from "./pages/dashboard/TimTableViewer";
 import AuthorityDashboardLayout from "./pages/dashboard/AuthorityDashboard";
 import AssignSenete from "./components/authority/AssignSenete";
 import ManageApprovals from "./components/authority/ManageApproval";
+import TimetableApprovalNotice from "./components/TimeTableSent";
+import ViewFaculty from "./components/faculty/ViewFaculty";
 
 
 const router = createBrowserRouter(
@@ -63,7 +65,8 @@ const router = createBrowserRouter(
       <Route index element={<Home />} />
       <Route path="about" element={<About />} />
       <Route path="contact" element={<Contact />} />
-
+          <Route path="/facultyTimeTable/:courseId/:year/:semester/:facultyId" element={<FacultyTimeTable />} />
+        <Route path="/sectionTimeTable/:courseId/:year/:semester" element={<SectionTimeTable />} />
 
       {/* <Route path="login-register" element={<OrganisationRegister />} /> */}
 
@@ -80,7 +83,9 @@ const router = createBrowserRouter(
         <Route path= "manage-documents" element={<DocumentManagement/>}/>
          <Route path = "manage-approvals" element = {<ManageApprovals/>}/>
       </Route>
-
+   <Route  path="viewFaculty/:facultyId" element = {<ViewFaculty/>} />
+   
+   
       {/* Dashboard (Protected) */} 
       <Route
         path="dashboard"
@@ -93,11 +98,13 @@ const router = createBrowserRouter(
         <Route path="organisation-info" element={<OrganisationInfo />} />
         <Route path="organisation-data-course" element={<CourseSelection />} />
         <Route path= "organisation-documents" element={<DocumentManagement/>}/>
+        <Route path="timetable-sent"  element ={<TimetableApprovalNotice/>}/>
         <Route path="organisation-data-taker/:courseId/years" element={<YearSelection />} />
         <Route path="organisation-data-taker/:courseId/:year/:semester/data" element={<AcademicDataPage />} />
         <Route path="organisation-data-taker" element={<OrganisationDataTaker />} />
         <Route path="upload-pdf/:courseId/:year/:semester" element={<UploadPdf />} />
         <Route path="timetables" element={<TimetableManager />} />
+     
         <Route path="facultyTimeTable/:courseId/:year/:semester" element={<FacultyTimeTable />} />
         <Route path="sectionTimeTable/:courseId/:year/:semester" element={<SectionTimeTable />} />
         <Route path="manage-timetable" element={<TimetableManager />} />

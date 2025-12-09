@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ChatBotWidget from "../components/ChatBot";
+import TimetableAccessWidget from "../components/faculty/TimeTableAccessWidget";
 
 const Temp: React.FC = () => {
   return (
@@ -13,6 +14,7 @@ const Temp: React.FC = () => {
         <Outlet />
       </main>
       <ChatBotWidget/>
+      <TimetableAccessWidget/>
       <Footer />
     </div>
   );

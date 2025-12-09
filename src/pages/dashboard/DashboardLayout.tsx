@@ -70,7 +70,7 @@ const DashboardLayout: React.FC = () => {
           </NavLink>
 
 
-        <NavLink to="organisation-data-course" onClick={() => setSidebarOpen(false)} className={linkClasses}>
+        <NavLink to="timetable-sent" onClick={() => setSidebarOpen(false)} className={linkClasses}>
             TimeTable Sent For Approval
           </NavLink>
       
