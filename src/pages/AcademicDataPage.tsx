@@ -28,12 +28,17 @@ const OrganisationDataTaker = () => {
       student_count: "",
       coordinator: "",
       specialization: "",
+      electives: [] as string[]
+    },
+    elective_slot: {
+      day_name: "Monday",
+      period: 1
     },
     subject: {
       subject_id: "",
       name: "",
       credits: 0,
-      type: "",
+      type: "Theory",
       semester: semester || "",
       lectures_per_week: "",
       min_classes_per_week: "",
@@ -41,12 +46,13 @@ const OrganisationDataTaker = () => {
       departments: [] as string[],
       tutorial_sessions: 0,
       specialization: "",
+      is_elective: false,
       flexible_timing: false,
     },
     lab: {
       lab_id: "",
       name: "",
-      type: "",
+      type: "Lab",
       credits: "",
       sessions_per_week: "",
       duration_hours: "",
@@ -54,6 +60,7 @@ const OrganisationDataTaker = () => {
       departments: [] as string[],
       lab_rooms: [] as string[],
       specialization: "",
+      requires_consecutive_periods: 2
     },
     faculty: {
       faculty_id: "",
@@ -64,12 +71,13 @@ const OrganisationDataTaker = () => {
       max_hours_per_week: "",
       avg_leaves_per_month: "",
       preferred_time_slots: [] as number[],
+      faculty_experience: 0
     },
     room: {
       room_id: "",
       name: "",
       capacity: 0,
-      type: "classroom",
+      type: "Classroom",
       department: "",
       equipment: [] as string[],
     },
@@ -99,11 +107,13 @@ const OrganisationDataTaker = () => {
         duration: number;
       }[],
     },
+    elective_slots: [] as any[],
     departments: [] as any[],
     subjects: [] as any[],
     labs: [] as any[],
     faculty: [] as any[],
     rooms: [] as any[],
+    subject_name_mapping: {} as Record<string, string>,
     constraints: {
       hard_constraints: {
         no_faculty_clash: true,
@@ -111,6 +121,7 @@ const OrganisationDataTaker = () => {
         no_section_clash: true,
         break_periods_fixed: [] as number[],
         lunch_period_fixed: null as number | null,
+        max_classes_per_subject_per_day: 2,
         max_classes_per_day_per_section: 7,
         min_classes_per_week_per_subject: true,
         lab_duration_consecutive: true,
@@ -142,6 +153,14 @@ const OrganisationDataTaker = () => {
           weight: 0.25,
         },
       },
+    },
+    genetic_algorithm_params: {
+      population_size: 50,
+      generations: 50,
+      mutation_rate: 0.2,
+      crossover_rate: 0.8,
+      elite_size: 5,
+      early_stopping_patience: 10
     },
     special_requirements: {
       mentorship_break: {
@@ -295,12 +314,18 @@ const OrganisationDataTaker = () => {
             ...initialFormData.time_slots,
             ...(data.time_slots || {}),
           },
+          elective_slots: data.elective_slots || [],
           departments: data.departments || [],
           subjects: data.subjects || [],
           labs: data.labs || [],
           faculty: data.faculty || [],
           rooms: data.rooms || [],
+          subject_name_mapping: data.subject_name_mapping || {},
           constraints: mergeConstraints(data),
+          genetic_algorithm_params: {
+            ...initialFormData.genetic_algorithm_params,
+            ...(data.genetic_algorithm_params || {}),
+          },
           special_requirements: mergeSpecialRequirements(data),
         };
         setFormData(merged);
@@ -337,6 +362,16 @@ const OrganisationDataTaker = () => {
         }
       });
     }
+
+    // Validate elective slots
+    formData.elective_slots.forEach((slot, index) => {
+      if (!slot.day_name) {
+        newErrors[`elective_slot_${index}_day`] = "Day name is required";
+      }
+      if (!slot.period || slot.period < 1) {
+        newErrors[`elective_slot_${index}_period`] = "Valid period is required";
+      }
+    });
 
     if (formData.departments.length === 0) {
       newErrors.departments = "At least one department is required";
@@ -629,60 +664,146 @@ const OrganisationDataTaker = () => {
     return value;
   };
 
+  const generateJson = async () => {
+    setHasAttemptedSubmit(true);
+    if (!validateForm()) {
+      toast.error("Please fix validation errors before saving");
+      return false;
+    }
+    try {
+      let payload: any = JSON.parse(JSON.stringify(formData));
+      payload = sanitizeForBackend(payload);
+      
+      // Remove temporary IDs and unnecessary fields
+      const cleanPayload = {
+        college_info: payload.college_info,
+        time_slots: {
+          periods: payload.time_slots.periods,
+          working_days: payload.time_slots.working_days
+        },
+        elective_slots: payload.elective_slots,
+        departments: payload.departments.map((dept: any) => ({
+          dept_id: dept.dept_id,
+          name: dept.name,
+          sections: dept.sections.map((sec: any) => ({
+            section_id: sec.section_id,
+            name: sec.name,
+            semester: sec.semester,
+            year: sec.year,
+            room: sec.room,
+            student_count: sec.student_count,
+            coordinator: sec.coordinator,
+            specialization: sec.specialization,
+            electives: sec.electives || []
+          }))
+        })),
+        subjects: payload.subjects.map((sub: any) => ({
+          subject_id: sub.subject_id,
+          name: sub.name,
+          type: sub.type,
+          credits: sub.credits,
+          lectures_per_week: sub.lectures_per_week,
+          semester: sub.semester,
+          departments: sub.departments,
+          specialization: sub.specialization,
+          min_classes_per_week: sub.min_classes_per_week,
+          max_classes_per_day: sub.max_classes_per_day,
+          tutorial_sessions: sub.tutorial_sessions,
+          is_elective: sub.is_elective
+        })),
+        labs: payload.labs.map((lab: any) => ({
+          lab_id: lab.lab_id,
+          name: lab.name,
+          type: lab.type,
+          credits: lab.credits,
+          sessions_per_week: lab.sessions_per_week,
+          duration_hours: lab.duration_hours,
+          semester: lab.semester,
+          departments: lab.departments,
+          specialization: lab.specialization,
+          lab_rooms: lab.lab_rooms,
+          requires_consecutive_periods: lab.requires_consecutive_periods || 2
+        })),
+        faculty: payload.faculty.map((fac: any) => ({
+          faculty_id: fac.faculty_id,
+          name: fac.name,
+          department: fac.department,
+          designation: fac.designation,
+          subjects: fac.subjects,
+          max_hours_per_week: fac.max_hours_per_week,
+          avg_leaves_per_month: fac.avg_leaves_per_month,
+          preferred_time_slots: fac.preferred_time_slots,
+          faculty_experience: fac.faculty_experience || 0
+        })),
+        rooms: payload.rooms.map((room: any) => ({
+          room_id: room.room_id,
+          name: room.name,
+          type: room.type,
+          capacity: room.capacity,
+          department: room.department,
+          equipment: room.equipment
+        })),
+        subject_name_mapping: payload.subject_name_mapping || {},
+        constraints: {
+          hard_constraints: {
+            no_faculty_clash: payload.constraints.hard_constraints.no_faculty_clash,
+            no_room_clash: payload.constraints.hard_constraints.no_room_clash,
+            no_section_clash: payload.constraints.hard_constraints.no_section_clash,
+            max_classes_per_subject_per_day: payload.constraints.hard_constraints.max_classes_per_subject_per_day || 2,
+            max_classes_per_day_per_section: payload.constraints.hard_constraints.max_classes_per_day_per_section,
+            lab_duration_consecutive: payload.constraints.hard_constraints.lab_duration_consecutive
+          },
+          soft_constraints: {
+            balanced_daily_load: {
+              weight: payload.constraints.soft_constraints.balanced_daily_load.weight,
+              max_deviation: payload.constraints.soft_constraints.balanced_daily_load.max_deviation
+            },
+            faculty_preference_slots: {
+              weight: payload.constraints.soft_constraints.faculty_preference_slots.weight
+            },
+            minimize_faculty_travel: {
+              weight: payload.constraints.soft_constraints.minimize_faculty_travel.weight
+            }
+          }
+        },
+        genetic_algorithm_params: payload.genetic_algorithm_params
+      };
+      
+      const res = await axios.post(
+        `${API_BASE_URL}/timetable/saveData/?course=${courseId}&year=${year}&semester=${semester}`,
+        cleanPayload,
+        { withCredentials: true }
+      );
+      toast.success("Data saved successfully!");
+      setHasOrganisationData(true);
+      return true;
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message || "Error saving data";
+      toast.error(errorMessage);
+      return false;
+    }
+  };
 
+  const saveAndGenerate = async () => {
+    setIsLoading(true);
+    setLoadingAction("saveGenerate");
 
- const generateJson = async () => {
-    setHasAttemptedSubmit(true);
-    if (!validateForm()) {
-      toast.error("Please fix validation errors before saving");
-      return false;
-    }
-    // NOTE: The outer function (generateJson or saveAndGenerate) should handle isLoading/loadingAction
-    // setIsLoading(true); 
-    // setLoadingAction("save");
-    try {
-      let payload: any = JSON.parse(JSON.stringify(formData));
-      // ... sanitization logic ...
-      payload = sanitizeForBackend(payload);
-      const res = await axios.post(
-        `${API_BASE_URL}/timetable/saveData/?course=${courseId}&year=${year}&semester=${semester}`,
-        payload,
-        { withCredentials: true }
-      );
-      toast.success("Data saved successfully!");
-      setHasOrganisationData(true);
-      return true;
-    } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message || "Error saving data";
-      toast.error(errorMessage);
-      return false;
-    } 
-    // REMOVED redundant finally block here, loading state is handled by the caller
-  };
-
-
-  const saveAndGenerate = async () => {
-    setIsLoading(true);
-    setLoadingAction("saveGenerate"); // This now covers the full sequence
-
-    try {
-      const ok = await generateJson(); // generateJson no longer modifies global loading state
-      
-      if (!ok) {
-        // If initial save failed, exit early and rely on finally to reset
-        return;
-      }
-      
-      // Continue with generation only if saving was successful
-      const res = await axios.post(
-        `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}&semester=${semester}`,
-        {},
-        { withCredentials: true }
-      );
-      
-      if (res.data?.data) {
-        toast.success("Generation Successful");
+    try {
+      const ok = await generateJson();
+      
+      if (!ok) {
+        return;
+      }
+      
+      const res = await axios.post(
+        `${API_BASE_URL}/timetable/generate?course=${courseId}&year=${year}&semester=${semester}`,
+        {},
+        { withCredentials: true }
+      );
+      
+      if (res.data?.data) {
+        toast.success("Generation Successful");
         
         await axios.post(`${API_BASE_URL}/request/send`,{
             year,
@@ -690,23 +811,20 @@ const OrganisationDataTaker = () => {
             semester
         },{
           withCredentials:true
-        })
-  toast.success("Your Timetable sent for approval")
-//         navigate(
-//           `/dashboard/timetable/variants/${courseId}/${year}/${semester}`
-//         );
-        navigate(
-          `/dashboard/timetable-sent`);
-      }
-    } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Error generating timetable"
-      );
-    } finally {
-      setIsLoading(false);
-      setLoadingAction("");
-    }
-  };
+        });
+        toast.success("Your Timetable sent for approval");
+        navigate(`/dashboard/timetable-sent`);
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Error generating timetable"
+      );
+    } finally {
+      setIsLoading(false);
+      setLoadingAction("");
+    }
+  };
+
   const resetForm = async () => {
     if (!window.confirm("Are you sure? This cannot be undone.")) return;
     setIsLoading(true);
@@ -748,11 +866,13 @@ const OrganisationDataTaker = () => {
   const tabs = [
     { id: "college", label: "College Info" },
     { id: "time", label: "Time Slots" },
+    { id: "elective", label: "Elective Slots" },
     { id: "departments", label: "Departments" },
     { id: "subjects", label: "Subjects" },
     { id: "labs", label: "Labs" },
     { id: "faculty", label: "Faculty" },
     { id: "rooms", label: "Rooms" },
+ 
   ];
 
   return (
@@ -782,7 +902,7 @@ const OrganisationDataTaker = () => {
             Large Data? Save Time!
           </h3>
           <p className="text-yellow-700 text-sm">
-            Upload your existing timetable PDF and we’ll auto-fill everything
+            Upload your existing timetable PDF and we'll auto-fill everything
             for you.
           </p>
         </div>
@@ -1131,7 +1251,6 @@ const OrganisationDataTaker = () => {
                       lunchBreakAfter,
                     } = formData.time_slots;
 
-                    // --- Validation ---
                     if (!start_time || !end_time || !periodCount || !periodDuration) {
                       alert("Please fill all required fields.");
                       return;
@@ -1148,7 +1267,6 @@ const OrganisationDataTaker = () => {
                       return;
                     }
 
-                    // --- Configuration ---
                     const PERIOD = periodDuration || 45;
                     const SHORT = shortBreak || 10;
                     const LUNCH = lunchBreak || 30;
@@ -1160,7 +1278,6 @@ const OrganisationDataTaker = () => {
 
                     let current = startMinutes;
                     
-                    // This single array will hold Periods AND Breaks to ensure no time is skipped
                     const allSlots: {
                       id: number | string;
                       type: "period" | "shortBreak" | "lunchBreak";
@@ -1172,14 +1289,11 @@ const OrganisationDataTaker = () => {
                     const breakPeriodsIndices: number[] = [];
                     let lunchPeriodIndex: number | null = null;
 
-                    // --- Generation Loop ---
                     for (let i = 1; i <= periodCount; i++) {
                       const periodEnd = current + PERIOD;
                       
-                      // 1. Add the Teaching Period
-                      // --------------------------
                       allSlots.push({
-                        id: i, // ID is the period number (e.g., 1, 2, 3)
+                        id: i,
                         type: "period",
                         start_time: format(current),
                         end_time: format(periodEnd),
@@ -1188,15 +1302,11 @@ const OrganisationDataTaker = () => {
                       
                       current = periodEnd;
 
-                      // 2. Check for Short Break
-                      // ------------------------
                       if (i === shortBreakAfter) {
                         const breakEnd = current + SHORT;
                         
-                        // Track the index where this break will live (e.g., index 2)
                         breakPeriodsIndices.push(i+1);
 
-                        // Push the Break as an actual slot
                         allSlots.push({
                           id: `${i+1}`,
                           type: "shortBreak",
@@ -1206,20 +1316,13 @@ const OrganisationDataTaker = () => {
                         });
                         i++;
                         current = breakEnd;
-
-                        
                       }
 
-                      // 3. Check for Lunch Break
-                      // ------------------------
                       if (i === lunchBreakAfter) {
                         const lunchEnd = current + LUNCH;
                         
-                        // Track the index where this lunch will live
                         lunchPeriodIndex = i+1;
-                        
 
-                        // Push the Lunch as an actual slot
                         allSlots.push({
                           id: `${i+1}`,
                           type: "lunchBreak",
@@ -1232,7 +1335,6 @@ const OrganisationDataTaker = () => {
                       }
                     }
 
-                    // --- Final Check ---
                     if (current > endMinutes) {
                       const totalDuration = current - startMinutes;
                       const hoursNeeded = Math.floor(totalDuration / 60);
@@ -1245,15 +1347,12 @@ const OrganisationDataTaker = () => {
                       return;
                     }
 
-                    // --- Update State ---
                     setFormData({
                       ...formData,
                       time_slots: {
                         ...formData.time_slots,
-                        // 'periods' now contains the FULL list (classes + breaks)
-                        // This ensures 10:10-11:00 exists in the array and won't be skipped.
                         periods: allSlots, 
-                        generatedSchedule: allSlots, // Preview uses the same list
+                        generatedSchedule: allSlots,
                         break_periods: breakPeriodsIndices,
                         lunch_period: lunchPeriodIndex,
                       },
@@ -1318,6 +1417,88 @@ const OrganisationDataTaker = () => {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === "elective" && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Elective Slots</h2>
+              <p className="text-gray-600 mb-4">
+                Define specific time slots for elective subjects. These are periods dedicated to elective courses.
+              </p>
+              <div className="space-y-4">
+                {formData.elective_slots.map((slot: any, index: number) => (
+                  <div key={slot._tempId || index} className="border p-4 rounded-lg bg-gray-50">
+                    <h3 className="font-medium mb-3">Elective Slot {index + 1}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Day Name <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`elective_slot_${index}_day`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={slot.day_name}
+                          onChange={(e) =>
+                            handleItemChange("elective_slots", index, "day_name", e.target.value)
+                          }
+                        >
+                          <option value="">Select Day</option>
+                          <option value="Monday">Monday</option>
+                          <option value="Tuesday">Tuesday</option>
+                          <option value="Wednesday">Wednesday</option>
+                          <option value="Thursday">Thursday</option>
+                          <option value="Friday">Friday</option>
+                          <option value="Saturday">Saturday</option>
+                        </select>
+                        {shouldShowError(`elective_slot_${index}_day`) && (
+                          <p className="text-red-500 text-xs mt-1">{errors[`elective_slot_${index}_day`]}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Period Number <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="12"
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            shouldShowError(`elective_slot_${index}_period`)
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          value={slot.period}
+                          onChange={(e) =>
+                            handleItemChange("elective_slots", index, "period", parseInt(e.target.value) || 1)
+                          }
+                          placeholder="e.g., 5"
+                        />
+                        {shouldShowError(`elective_slot_${index}_period`) && (
+                          <p className="text-red-500 text-xs mt-1">{errors[`elective_slot_${index}_period`]}</p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className={`${btnDanger} mt-3 text-xs py-1 px-3`}
+                      onClick={() => removeItem("elective_slots", index)}
+                    >
+                      Remove Slot
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className={`${btnSuccess} mt-6`}
+                onClick={() => addArrayItem("elective_slots", { ...defaultTemplates.elective_slot })}
+              >
+                Add Elective Slot
+              </button>
             </div>
           )}
 
@@ -1451,6 +1632,11 @@ const OrganisationDataTaker = () => {
                                 label: "Specialization",
                                 type: "text",
                               },
+                              {
+                                name: "electives",
+                                label: "Electives (comma separated)",
+                                type: "text",
+                              },
                             ].map((field) => (
                               <div key={field.name}>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1468,13 +1654,17 @@ const OrganisationDataTaker = () => {
                                       ? "border-red-500"
                                       : "border-gray-300"
                                   }`}
-                                  value={sec[field.name] || ""}
+                                  value={field.name === "electives" 
+                                    ? (sec[field.name] || []).join(", ") 
+                                    : sec[field.name] || ""}
                                   onChange={(e) =>
                                     handleSectionChange(
                                       deptIndex,
                                       secIndex,
                                       field.name,
-                                      field.type === "number"
+                                      field.name === "electives"
+                                        ? e.target.value.split(",").map((s: string) => s.trim())
+                                        : field.type === "number"
                                         ? parseInt(e.target.value) || 0
                                         : e.target.value
                                     )
@@ -1644,11 +1834,9 @@ const OrganisationDataTaker = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Type [Theory or Practical]{" "}
-                          <span className="text-red-500">*</span>
+                          Type <span className="text-red-500">*</span>
                         </label>
-                        <input
-                          type="text"
+                        <select
                           className={`w-full px-3 py-2 border rounded-md ${
                             shouldShowError(`subject_${subjectIndex}`)
                               ? "border-red-500"
@@ -1663,8 +1851,11 @@ const OrganisationDataTaker = () => {
                               e.target.value
                             )
                           }
-                          placeholder="e.g., Theory"
-                        />
+                        >
+                          <option value="Theory">Theory</option>
+                          <option value="Practical">Practical</option>
+                          <option value="Tutorial">Tutorial</option>
+                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1831,6 +2022,24 @@ const OrganisationDataTaker = () => {
                         <input
                           type="checkbox"
                           className="mr-2"
+                          checked={!!subject.is_elective}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "subjects",
+                              subjectIndex,
+                              "is_elective",
+                              e.target.checked
+                            )
+                          }
+                        />
+                        <span className="text-sm text-gray-700">
+                          Is Elective Subject
+                        </span>
+                      </div>
+                      <div className="flex items-center mt-2">
+                        <input
+                          type="checkbox"
+                          className="mr-2"
                           checked={!!subject.flexible_timing}
                           onChange={(e) =>
                             handleItemChange(
@@ -1939,8 +2148,7 @@ const OrganisationDataTaker = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Type
                         </label>
-                        <input
-                          type="text"
+                        <select
                           className="w-full px-3 py-2 border rounded-md border-gray-300"
                           value={lab.type || ""}
                           onChange={(e) =>
@@ -1951,8 +2159,12 @@ const OrganisationDataTaker = () => {
                               e.target.value
                             )
                           }
-                          placeholder="e.g., Hardware"
-                        />
+                        >
+                          <option value="Lab">Lab</option>
+                          <option value="Hardware">Hardware Lab</option>
+                          <option value="Software">Software Lab</option>
+                          <option value="Research">Research Lab</option>
+                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2114,6 +2326,27 @@ const OrganisationDataTaker = () => {
                             )
                           }
                           placeholder="e.g., ML Lab"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Requires Consecutive Periods
+                        </label>
+                        <input
+                          type="number"
+                          className="w-full px-3 py-2 border rounded-md border-gray-300"
+                          value={lab.requires_consecutive_periods || 2}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "labs",
+                              labIndex,
+                              "requires_consecutive_periods",
+                              parseInt(e.target.value) || 2
+                            )
+                          }
+                          placeholder="e.g., 2"
+                          min="1"
+                          max="4"
                         />
                       </div>
                     </div>
@@ -2365,6 +2598,26 @@ const OrganisationDataTaker = () => {
                           placeholder="e.g., 1, 2, 3"
                         />
                       </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Faculty Experience (years)
+                        </label>
+                        <input
+                          type="number"
+                          className="w-full px-3 py-2 border rounded-md border-gray-300"
+                          value={member.faculty_experience || 0}
+                          onChange={(e) =>
+                            handleItemChange(
+                              "faculty",
+                              index,
+                              "faculty_experience",
+                              parseInt(e.target.value) || 0
+                            )
+                          }
+                          placeholder="e.g., 5"
+                          min="0"
+                        />
+                      </div>
                     </div>
                     {shouldShowError(`faculty_${index}`) && (
                       <p className="text-red-500 text-xs mt-1 mb-2">
@@ -2529,12 +2782,11 @@ const OrganisationDataTaker = () => {
                           }
                         >
                           <option value="">Select a type</option>
-                          <option value="classroom">Classroom</option>
-                          <option value="lab">Laboratory</option>
-                          <option value="auditorium">Auditorium</option>
-                          <option value="conference">
-                            Conference Room
-                          </option>
+                          <option value="Classroom">Classroom</option>
+                          <option value="Lab">Laboratory</option>
+                          <option value="Auditorium">Auditorium</option>
+                          <option value="Conference">Conference Room</option>
+                          <option value="Seminar">Seminar Hall</option>
                         </select>
                       </div>
                       <div>
@@ -2585,6 +2837,310 @@ const OrganisationDataTaker = () => {
               </button>
             </div>
           )}
+{/* 
+          {activeTab === "constraints" && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Constraints</h2>
+              <div className="space-y-6">
+                <div className="border p-4 rounded-lg bg-gray-50">
+                  <h3 className="font-semibold mb-3 text-lg">Hard Constraints</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={formData.constraints.hard_constraints.no_faculty_clash}
+                        onChange={(e) =>
+                          handleNestedInputChange(
+                            "constraints.hard_constraints.no_faculty_clash",
+                            e.target.checked
+                          )
+                        }
+                      />
+                      <span className="text-sm text-gray-700">No Faculty Clash</span>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={formData.constraints.hard_constraints.no_room_clash}
+                        onChange={(e) =>
+                          handleNestedInputChange(
+                            "constraints.hard_constraints.no_room_clash",
+                            e.target.checked
+                          )
+                        }
+                      />
+                      <span className="text-sm text-gray-700">No Room Clash</span>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={formData.constraints.hard_constraints.no_section_clash}
+                        onChange={(e) =>
+                          handleNestedInputChange(
+                            "constraints.hard_constraints.no_section_clash",
+                            e.target.checked
+                          )
+                        }
+                      />
+                      <span className="text-sm text-gray-700">No Section Clash</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Max Classes Per Subject Per Day
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full px-3 py-2 border rounded-md border-gray-300"
+                        value={formData.constraints.hard_constraints.max_classes_per_subject_per_day}
+                        onChange={(e) =>
+                          handleNestedInputChange(
+                            "constraints.hard_constraints.max_classes_per_subject_per_day",
+                            parseInt(e.target.value) || 2
+                          )
+                        }
+                        min="1"
+                        max="4"
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Max Classes Per Day Per Section
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full px-3 py-2 border rounded-md border-gray-300"
+                        value={formData.constraints.hard_constraints.max_classes_per_day_per_section}
+                        onChange={(e) =>
+                          handleNestedInputChange(
+                            "constraints.hard_constraints.max_classes_per_day_per_section",
+                            parseInt(e.target.value) || 7
+                          )
+                        }
+                        min="1"
+                        max="10"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={formData.constraints.hard_constraints.lab_duration_consecutive}
+                        onChange={(e) =>
+                          handleNestedInputChange(
+                            "constraints.hard_constraints.lab_duration_consecutive",
+                            e.target.checked
+                          )
+                        }
+                      />
+                      <span className="text-sm text-gray-700">Lab Duration Consecutive</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border p-4 rounded-lg bg-gray-50">
+                  <h3 className="font-semibold mb-3 text-lg">Soft Constraints</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Balanced Daily Load Weight
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="1"
+                        className="w-full px-3 py-2 border rounded-md border-gray-300"
+                        value={formData.constraints.soft_constraints.balanced_daily_load.weight}
+                        onChange={(e) =>
+                          handleNestedInputChange(
+                            "constraints.soft_constraints.balanced_daily_load.weight",
+                            parseFloat(e.target.value) || 0.3
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Max Deviation (Periods)
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full px-3 py-2 border rounded-md border-gray-300"
+                        value={formData.constraints.soft_constraints.balanced_daily_load.max_deviation}
+                        onChange={(e) =>
+                          handleNestedInputChange(
+                            "constraints.soft_constraints.balanced_daily_load.max_deviation",
+                            parseInt(e.target.value) || 2
+                          )
+                        }
+                        min="1"
+                        max="5"
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Faculty Preference Weight
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="1"
+                        className="w-full px-3 py-2 border rounded-md border-gray-300"
+                        value={formData.constraints.soft_constraints.faculty_preference_slots.weight}
+                        onChange={(e) =>
+                          handleNestedInputChange(
+                            "constraints.soft_constraints.faculty_preference_slots.weight",
+                            parseFloat(e.target.value) || 0.2
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Minimize Faculty Travel Weight
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="1"
+                        className="w-full px-3 py-2 border rounded-md border-gray-300"
+                        value={formData.constraints.soft_constraints.minimize_faculty_travel.weight}
+                        onChange={(e) =>
+                          handleNestedInputChange(
+                            "constraints.soft_constraints.minimize_faculty_travel.weight",
+                            parseFloat(e.target.value) || 0.15
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )} */}
+
+          {/* {activeTab === "algorithm" && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Genetic Algorithm Parameters</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Population Size
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full px-3 py-2 border rounded-md border-gray-300"
+                    value={formData.genetic_algorithm_params.population_size}
+                    onChange={(e) =>
+                      handleNestedInputChange(
+                        "genetic_algorithm_params.population_size",
+                        parseInt(e.target.value) || 50
+                      )
+                    }
+                    min="10"
+                    max="200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Generations
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full px-3 py-2 border rounded-md border-gray-300"
+                    value={formData.genetic_algorithm_params.generations}
+                    onChange={(e) =>
+                      handleNestedInputChange(
+                        "genetic_algorithm_params.generations",
+                        parseInt(e.target.value) || 50
+                      )
+                    }
+                    min="10"
+                    max="200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mutation Rate
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    max="1"
+                    className="w-full px-3 py-2 border rounded-md border-gray-300"
+                    value={formData.genetic_algorithm_params.mutation_rate}
+                    onChange={(e) =>
+                      handleNestedInputChange(
+                        "genetic_algorithm_params.mutation_rate",
+                        parseFloat(e.target.value) || 0.2
+                      )
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Crossover Rate
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    max="1"
+                    className="w-full px-3 py-2 border rounded-md border-gray-300"
+                    value={formData.genetic_algorithm_params.crossover_rate}
+                    onChange={(e) =>
+                      handleNestedInputChange(
+                        "genetic_algorithm_params.crossover_rate",
+                        parseFloat(e.target.value) || 0.8
+                      )
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Elite Size
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full px-3 py-2 border rounded-md border-gray-300"
+                    value={formData.genetic_algorithm_params.elite_size}
+                    onChange={(e) =>
+                      handleNestedInputChange(
+                        "genetic_algorithm_params.elite_size",
+                        parseInt(e.target.value) || 5
+                      )
+                    }
+                    min="1"
+                    max="20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Early Stopping Patience
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full px-3 py-2 border rounded-md border-gray-300"
+                    value={formData.genetic_algorithm_params.early_stopping_patience}
+                    onChange={(e) =>
+                      handleNestedInputChange(
+                        "genetic_algorithm_params.early_stopping_patience",
+                        parseInt(e.target.value) || 10
+                      )
+                    }
+                    min="1"
+                    max="50"
+                  />
+                </div>
+              </div>
+            </div>
+          )} */}
         </div>
 
         <div className="flex flex-col-reverse md:flex-row md:justify-end gap-4">

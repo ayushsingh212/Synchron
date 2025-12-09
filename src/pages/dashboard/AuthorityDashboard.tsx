@@ -77,6 +77,9 @@ const AuthorityDashboardLayout: React.FC = () => {
             <NavLink to="manage-documents" onClick={() => setSidebarOpen(false)} className={linkClasses}>
             Document Management
           </NavLink>
+              <NavLink to="master-timetable" onClick={() => setSidebarOpen(false)} className={linkClasses}>
+            Document Management
+          </NavLink>
         </nav>
 
         {/* <button

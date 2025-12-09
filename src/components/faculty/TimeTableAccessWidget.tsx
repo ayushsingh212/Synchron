@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 export default function TimetableAccessWidget() {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"faculty" | "student" | "">("");
-  const [organisationEmail, setOrganisationEmail] = useState("");
+  const [organisationId, setorganisationId] = useState("");
   const [course, setCourse] = useState("");
   const [year, setYear] = useState("");
   const [semester, setSemester] = useState("");
@@ -14,11 +14,15 @@ export default function TimetableAccessWidget() {
   const modalRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
 
+  const courseOptions = ["b.tech", "m.tech", "mca"];
+  const yearOptions = ["1st year", "2nd year", "3rd year", "4th year"];
+  const semesterOptions = ["sem 1", "sem 2", "sem 3", "sem 4", "sem 5", "sem 6", "sem 7", "sem 8"];
+
   const closeModal = () => {
     setOpen(false);
     setTimeout(() => {
       setMode("");
-      setOrganisationEmail("");
+      setorganisationId("");
       setCourse("");
       setYear("");
       setSemester("");
@@ -28,20 +32,21 @@ export default function TimetableAccessWidget() {
 
   const handleProceed = () => {
     if (!value.trim()) return;
-    if (!organisationEmail || !course || !year || !semester) return;
+    if (!organisationId || !course || !year || !semester) return;
+
+    const c = course.toLowerCase().trim();
+    const y = year.toLowerCase().trim();
+    const s = semester.toLowerCase().trim();
+    const id = value.trim();
 
     if (mode === "faculty") {
-   navigate(`/facultyTimeTable/${course}/${year}/${semester}/${value.trim()}`, {
-  state: { organisationEmail,isBlocked:true }
-});
-
+      navigate(`/facultyTimeTable/${c}/${y}/${s}/${id}`, {
+        state: { organisationId, isBlocked: true }
+      });
     } else {
-     navigate(`/sectionTimeTable/${course}/${year}/${semester}/${value.trim()}`, {
-  state: { organisationEmail,
-    isBlocked:true
-   }
-});
-
+      navigate(`/sectionTimeTable/${c}/${y}/${s}/${id}`, {
+        state: { organisationId, isBlocked: true }
+      });
     }
 
     closeModal();
@@ -68,14 +73,9 @@ export default function TimetableAccessWidget() {
 
       {open && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[99999]">
-          <div
-            ref={modalRef}
-            className="bg-white w-[90%] max-w-sm rounded-2xl shadow-xl p-6 animate-fadeIn"
-          >
+          <div ref={modalRef} className="bg-white w-[90%] max-w-sm rounded-2xl shadow-xl p-6 animate-fadeIn">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-blue-700">
-                Access Your Timetable
-              </h2>
+              <h2 className="text-xl font-semibold text-blue-700">Access Your Timetable</h2>
               <button onClick={closeModal} className="text-gray-600 hover:text-red-500">
                 <FiX size={20} />
               </button>
@@ -102,32 +102,44 @@ export default function TimetableAccessWidget() {
             {mode !== "" && (
               <div className="mt-4 space-y-3">
                 <input
-                  value={organisationEmail}
-                  onChange={(e) => setOrganisationEmail(e.target.value)}
+                  value={organisationId}
+                  onChange={(e) => setorganisationId(e.target.value)}
                   placeholder="Organisation Email"
                   className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-700"
                 />
 
-                <input
+                <select
                   value={course}
                   onChange={(e) => setCourse(e.target.value)}
-                  placeholder="Course (e.g., btech)"
-                  className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-700"
-                />
+                  className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">Select Course</option>
+                  {courseOptions.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
 
-                <input
+                <select
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  placeholder="Year (e.g., 1st)"
-                  className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-700"
-                />
+                  className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">Select Year</option>
+                  {yearOptions.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
 
-                <input
+                <select
                   value={semester}
                   onChange={(e) => setSemester(e.target.value)}
-                  placeholder="Semester (e.g., 2nd)"
-                  className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-700"
-                />
+                  className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">Select Semester</option>
+                  {semesterOptions.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
 
                 <input
                   value={value}
@@ -138,9 +150,7 @@ export default function TimetableAccessWidget() {
 
                 <button
                   onClick={handleProceed}
-                  disabled={
-                    !organisationEmail || !course || !year || !semester || !value.trim()
-                  }
+                  disabled={!organisationId || !course || !year || !semester || !value.trim()}
                   className="w-full mt-2 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition disabled:bg-gray-300"
                 >
                   View Timetable
@@ -149,7 +159,7 @@ export default function TimetableAccessWidget() {
                 <button
                   onClick={() => {
                     setMode("");
-                    setOrganisationEmail("");
+                    setorganisationId("");
                     setCourse("");
                     setYear("");
                     setSemester("");

@@ -56,6 +56,7 @@ import AssignSenete from "./components/authority/AssignSenete";
 import ManageApprovals from "./components/authority/ManageApproval";
 import TimetableApprovalNotice from "./components/TimeTableSent";
 import ViewFaculty from "./components/faculty/ViewFaculty";
+import MasterTimetable from "./components/authority/MasterTimeTable";
 
 
 const router = createBrowserRouter(
@@ -82,6 +83,7 @@ const router = createBrowserRouter(
       <Route  path="manage-senetes" element ={<AssignSenete/>} />
         <Route path= "manage-documents" element={<DocumentManagement/>}/>
          <Route path = "manage-approvals" element = {<ManageApprovals/>}/>
+         <Route path ="master-timetable" element={<MasterTimetable/>}/>
       </Route>
    <Route  path="viewFaculty/:facultyId" element = {<ViewFaculty/>} />
    
@@ -104,7 +106,6 @@ const router = createBrowserRouter(
         <Route path="organisation-data-taker" element={<OrganisationDataTaker />} />
         <Route path="upload-pdf/:courseId/:year/:semester" element={<UploadPdf />} />
         <Route path="timetables" element={<TimetableManager />} />
-     
         <Route path="facultyTimeTable/:courseId/:year/:semester" element={<FacultyTimeTable />} />
         <Route path="sectionTimeTable/:courseId/:year/:semester" element={<SectionTimeTable />} />
         <Route path="manage-timetable" element={<TimetableManager />} />
