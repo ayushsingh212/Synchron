@@ -47,43 +47,39 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
   const [formData, setFormData] = useState({
     organisationEmail: "",
     organisationContactNumber: "",
-    senateId:"",
+    senateId: "",
     password: "",
     otp: "",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const requestOtp = async () => {
+    if (loginRole !== "authority") {
+      toast.error("OTP login is not available for Senate.");
+      return;
+    }
+
     try {
       if (!formData.organisationEmail) {
-        toast.error("Please enter your organisationEmail");
+        toast.error("Please enter your organisation email");
         return;
       }
 
       const organisationEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!organisationEmailRegex.test(formData.organisationEmail)) {
-        toast.error("Please enter a valid organisationEmail address");
+        toast.error("Please enter a valid email address");
         return;
       }
 
       setOtpLoading(true);
 
-      if (loginRole === "authority") {
-        await axios.post(
-          `${API_BASE_URL}/verification/getOtp/login`,
-          { organisationEmail: formData.organisationEmail },
-          { withCredentials: true }
-        );
-      } else {
-        await axios.post(
-          `${API_BASE_URL}/verification/getOtp/login`,
-          { organisationEmail: formData.organisationEmail, role: "senate" },
-          { withCredentials: true }
-        );
-      }
+      await axios.post(`
+        ${API_BASE_URL}/verification/getOtp/login`,
+        { organisationEmail: formData.organisationEmail },
+        { withCredentials: true }
+      );
 
       toast.success("OTP sent successfully");
     } catch (err: any) {
@@ -95,52 +91,51 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
 
   const debouncedRequestOtp = useDebounce(requestOtp, 1500);
 
+  // 🎯 SUBMIT
   const submitForm = async () => {
     try {
       setLoading(true);
       let response;
 
-      if (loginMethod === "password") {
+      // ---------- PASSWORD LOGIN ----------
+      if (loginMethod === "password" || loginRole === "senate") {
         if (loginRole === "authority") {
-          const loginData = {
-            organisationEmailOrorganisationContactNumber:
-            formData.organisationEmail || formData.organisationContactNumber,
-            password: formData.password,
-          };
-
-          response = await axios.post(
-            `${API_BASE_URL}/organisation/login`,
-            loginData,
+          response = await axios.post(`
+            ${API_BASE_URL}/organisation/login`,
+            {
+              organisationEmailOrorganisationContactNumber:
+                formData.organisationEmail || formData.organisationContactNumber,
+              password: formData.password,
+            },
             { withCredentials: true }
           );
         } else {
-          const loginData = {
-            organisationEmail: formData.organisationEmail,
-            senateId: formData.senateId,
-            password: formData.password,
-          };
-
-          response = await axios.post(
-            `${API_BASE_URL}/senate/login`,
-            loginData,
+          response = await axios.post(`
+            ${API_BASE_URL}/senate/login`,
+            {
+              organisationEmail: formData.organisationEmail,
+              senateId: formData.senateId,
+              password: formData.password,
+            },
             { withCredentials: true }
           );
         }
-      } else {
+      }
+
+      // ---------- OTP LOGIN (Authority only) ----------
+      else {
         if (!formData.otp) {
           toast.error("Please enter OTP");
           return;
         }
 
-        const loginData = {
-          organisationEmail: formData.organisationEmail,
-          otp: formData.otp,
-          role: loginRole,
-        };
-
-        response = await axios.post(
-          `${API_BASE_URL}/organisation/login`,
-          loginData,
+        response = await axios.post(`
+          ${API_BASE_URL}/organisation/login`,
+          {
+            organisationEmail: formData.organisationEmail,
+            otp: formData.otp,
+            role: loginRole,
+          },
           { withCredentials: true }
         );
       }
@@ -155,8 +150,9 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
 
       window.dispatchEvent(new CustomEvent("close-both-modal"));
 
-      if (loginRole === "authority") navigate("/authority-dashboard/management-panel");
-      else navigate("/dashboard/organisation-info");
+      loginRole === "authority"
+        ? navigate("/authority-dashboard/management-panel")
+        : navigate("/dashboard/organisation-info");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Login failed");
     } finally {
@@ -169,18 +165,18 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
     if (!loading) submitForm();
   };
 
+  // RESET WHEN MODAL CLOSES
   useEffect(() => {
     if (!open) {
       setFormData({
         organisationEmail: "",
         organisationContactNumber: "",
+        senateId: "",
         password: "",
         otp: "",
       });
-      setLoading(false);
-      setOtpLoading(false);
-      setLoginRole("authority");
       setLoginMethod("password");
+      setLoginRole("authority");
     }
   }, [open]);
 
@@ -189,7 +185,6 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
       <button
         onClick={onClose}
         className="absolute right-4 top-4 text-blue-700 hover:text-blue-900 transition"
-        aria-label="Close modal"
       >
         <X size={22} />
       </button>
@@ -198,23 +193,23 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
         Organisation Login
       </h2>
 
+      {/* SELECT ROLE */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Login as:
         </label>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 mb-4">
           <button
             type="button"
             onClick={() => setLoginRole("authority")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 transition-all ${
               loginRole === "authority"
                 ? "border-blue-600 bg-blue-50 text-blue-700"
-                : "border-gray-300 bg-white text-gray-700 hover:border-blue-400"
+                : "border-gray-300 bg-white text-gray-700"
             }`}
           >
-            <Shield size={18} />
-            <span>Authority</span>
+            <Shield size={18} /> Authority
           </button>
 
           <button
@@ -223,105 +218,88 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 transition-all ${
               loginRole === "senate"
                 ? "border-blue-600 bg-blue-50 text-blue-700"
-                : "border-gray-300 bg-white text-gray-700 hover:border-blue-400"
+                : "border-gray-300 bg-white text-gray-700"
             }`}
           >
-            <Briefcase size={18} />
-            <span>Senate</span>
+            <Briefcase size={18} /> Senate
           </button>
         </div>
 
-        <div className="mt-3 text-xs text-gray-500">
-          {loginRole === "authority" ? (
-            <p>✓ Organisation administrator with full access</p>
-          ) : (
-            <p>✓ Manage organisation content and operations</p>
-          )}
-        </div>
-      </div>
+        {/* LOGIN METHOD — ONLY AUTHORITY */}
+        {loginRole === "authority" && (
+          <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => setLoginMethod("password")}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold ${
+                loginMethod === "password"
+                  ? "bg-white text-blue-600 shadow"
+                  : "text-gray-600"
+              }`}
+            >
+              Password Login
+            </button>
 
-
-
-      <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
-        <button
-          type="button"
-          onClick={() => setLoginMethod("password")}
-          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
-            loginMethod === "password"
-              ? "bg-white text-blue-600 shadow"
-              : "text-gray-600 hover:bg-gray-200"
-          }`}
-        >
-          Password Login
-        </button>
-        <button
-          type="button"
-          onClick={() => setLoginMethod("otp")}
-          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
-            loginMethod === "otp"
-              ? "bg-white text-blue-600 shadow"
-              : "text-gray-600 hover:bg-gray-200"
-          }`}
-        >
-          OTP Login
-        </button>
+            <button
+              type="button"
+              onClick={() => setLoginMethod("otp")}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold ${
+                loginMethod === "otp"
+                  ? "bg-white text-blue-600 shadow"
+                  : "text-gray-600"
+              }`}
+            >
+              OTP Login
+            </button>
+          </div>
+        )}
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
-                    {loginMethod === "password" ? (
-              <>
-                {/* Email */}
-                <div className="relative">
-                  <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
-                  <input
-                    type="text"
-                    name="organisationEmail"
-                    value={formData.organisationEmail}
-                    onChange={handleChange}
-                    placeholder={
-                      loginRole === "authority"
-                        ? "Organisation Email"
-                        : "Your Organisation Email"
-                    }
-                    className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                    disabled={loading}
-                  />
-                </div>
-
-                {loginRole === "senate" && (
-                  <div className="relative">
-                    <Hash className="absolute left-4 top-3.5 text-blue-600 h-5" />
-                    <input
-                      type="text"
-                      name="senateId"
-                      value={formData.senateId}
-                      onChange={handleChange}
-                      placeholder="Enter Senate Email"
-                      className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                      disabled={loading}
-                    />
-                    
-                  </div>
-                  
-                )}
-
-                {/* Password */}
-                <div className="relative">
-                  <Lock className="absolute left-4 top-3.5 text-blue-600 h-5" />
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Password"
-                    className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                    disabled={loading}
-                  />
-                </div>
-              </>
-            ) : (
-
+        {/* PASSWORD LOGIN or SENATE LOGIN */}
+        {loginMethod === "password" || loginRole === "senate" ? (
           <>
+            <div className="relative">
+              <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
+              <input
+                type="text"
+                name="organisationEmail"
+                value={formData.organisationEmail}
+                onChange={handleChange}
+                placeholder="Organisation Email"
+                className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200"
+              />
+            </div>
+
+            {loginRole === "senate" && (
+              <div className="relative">
+                <Hash className="absolute left-4 top-3.5 text-blue-600 h-5" />
+                <input
+                  type="text"
+                  name="senateId"
+                  value={formData.senateId}
+                  onChange={handleChange}
+                  placeholder="Enter Senate ID"
+                  className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200"
+                />
+              </div>
+            )}
+
+            <div className="relative">
+              <Lock className="absolute left-4 top-3.5 text-blue-600 h-5" />
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Password"
+                className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200"
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* OTP LOGIN — AUTHORITY ONLY */}
             <div className="relative">
               <Mail className="absolute left-4 top-3.5 text-blue-600 h-5" />
               <input
@@ -329,9 +307,9 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
                 name="organisationEmail"
                 value={formData.organisationEmail}
                 onChange={handleChange}
-                placeholder="Enter your organisationEmail"
-                className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                disabled={loading || otpLoading}
+                placeholder="Enter your organisation email"
+                className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200"
+                disabled={otpLoading}
               />
             </div>
 
@@ -345,16 +323,15 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
                   onChange={handleChange}
                   placeholder="Enter OTP"
                   maxLength={6}
-                  className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                  disabled={loading}
+                  className="w-full px-4 py-3 pl-12 rounded-xl border border-blue-200"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={() => debouncedRequestOtp()}
-                disabled={loading || otpLoading || !formData.organisationEmail}
-                className="px-4 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                disabled={otpLoading || !formData.organisationEmail}
+                className="px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold"
               >
                 {otpLoading ? "Sending..." : "Get OTP"}
               </button>
@@ -364,13 +341,12 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-base font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold"
         >
           {loading
             ? "Processing..."
             : loginMethod === "password"
-            ? `Login as ${loginRole === "authority" ? "Authority" : "Senate"}`
+            ? `Login as ${loginRole}`
             : "Verify & Login"}
         </button>
       </form>
@@ -379,7 +355,7 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
         Don't have an account?
         <button
           type="button"
-          className="font-medium underline ml-1 hover:text-blue-800 transition"
+          className="font-medium underline ml-1"
           onClick={() => {
             onClose();
             window.dispatchEvent(new CustomEvent("open-register-modal"));
