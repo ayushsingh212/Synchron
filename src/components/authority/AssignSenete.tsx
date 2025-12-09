@@ -40,7 +40,7 @@ const AssignSenete: React.FC = () => {
         { withCredentials: true }
       );
 
-      toast.success("Senete created successfully");
+      toast.success("HOD ASSIGNED successfully");
       setForm({ senateId: "", password: "" });
       fetchSenates();
     } catch (err: any) {
@@ -57,7 +57,7 @@ const AssignSenete: React.FC = () => {
         { withCredentials: true }
       );
 
-      toast.success("Senete removed");
+      toast.success("HOD unassigned");
       fetchSenates();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Error removing senete");
@@ -73,14 +73,14 @@ const AssignSenete: React.FC = () => {
 
       <div className="p-6 bg-blue-50 border border-blue-200 rounded-xl shadow-sm">
         <h2 className="text-xl font-semibold text-blue-700 mb-4 flex items-center gap-2">
-          <UserPlus size={20} /> Assign New Senete
+          <UserPlus size={20} /> Assign New HOD
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
             type="text"
             name="senateId"
-            placeholder="Enter Senate ID"
+            placeholder="Enter HOD MAIL"
             value={form.senateId}
             onChange={handleChange}
             className="px-4 py-3 rounded-lg border border-blue-300 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -89,7 +89,7 @@ const AssignSenete: React.FC = () => {
           <input
             type="password"
             name="password"
-            placeholder="Enter Senate Password"
+            placeholder="Allot a  Password"
             value={form.password}
             onChange={handleChange}
             className="px-4 py-3 rounded-lg border border-blue-300 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -101,7 +101,7 @@ const AssignSenete: React.FC = () => {
           disabled={loading}
           className="mt-4 bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
         >
-          {loading ? "Creating..." : "Add Senete"}
+          {loading ? "Creating..." : "Assign HOD"}
         </button>
       </div>
 
@@ -109,7 +109,7 @@ const AssignSenete: React.FC = () => {
         <h2 className="text-xl font-semibold text-slate-700 mb-4">Assigned Senetes</h2>
 
         {senates.length === 0 ? (
-          <p className="text-slate-500">No senetes assigned yet.</p>
+          <p className="text-slate-500">No HOD assigned yet.</p>
         ) : (
           <div className="space-y-3">
             {senates.map((s: any) => (

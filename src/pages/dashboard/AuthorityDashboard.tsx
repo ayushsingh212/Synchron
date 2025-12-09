@@ -66,7 +66,7 @@ const AuthorityDashboardLayout: React.FC = () => {
           </NavLink>
 
           <NavLink to="manage-senetes" onClick={() => setSidebarOpen(false)} className={linkClasses}>
-            Assign Senete
+            Assign HOD
           </NavLink>
 
       

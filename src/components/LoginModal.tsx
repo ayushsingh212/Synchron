@@ -209,7 +209,7 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
                 : "border-gray-300 bg-white text-gray-700"
             }`}
           >
-            <Shield size={18} /> Authority
+            <Shield size={18} /> Director
           </button>
 
           <button
@@ -221,7 +221,7 @@ const LoginModal: React.FC<Props> = ({ open, onClose }) => {
                 : "border-gray-300 bg-white text-gray-700"
             }`}
           >
-            <Briefcase size={18} /> Senate
+            <Briefcase size={18} /> HOD
           </button>
         </div>
 
