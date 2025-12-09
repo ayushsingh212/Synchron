@@ -67,7 +67,7 @@ const router = createBrowserRouter(
       <Route path="about" element={<About />} />
       <Route path="contact" element={<Contact />} />
           <Route path="/facultyTimeTable/:courseId/:year/:semester/:facultyId" element={<FacultyTimeTable />} />
-        <Route path="/sectionTimeTable/:courseId/:year/:semester" element={<SectionTimeTable />} />
+        <Route path="/sectionTimeTable/:c/:year/:semester/:sectionId" element={<SectionTimeTable />} />
 
       {/* <Route path="login-register" element={<OrganisationRegister />} /> */}
 

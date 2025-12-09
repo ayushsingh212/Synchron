@@ -2,7 +2,7 @@ import axios from "axios";
 import React, { useEffect, useState, useCallback } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
@@ -10,6 +10,12 @@ import { API_BASE_URL } from "../../config";
 import { useOrganisation } from "../../context/OrganisationContext";
 
 const SectionTimeTable = () => {
+  // const {semester,year,courseId} = useParams()
+   const location = useLocation();
+   const {organisationId,isBlocked} = location?.state || {
+    organisationId:"",
+    isBlocked:false
+   }
   const days = [
     "Monday",
     "Tuesday",
@@ -43,7 +49,7 @@ const SectionTimeTable = () => {
     DEFAULT: "#D8BFD8",
   };
 
-  const {courseId,semester,year} = useParams()
+  const {courseId,semester,year,facultyId} = useParams()
   const hexToRgb = useCallback((hex) => {
     hex = hex.replace(/^#/, "");
     const bigint = parseInt(hex, 16);
@@ -77,9 +83,9 @@ const SectionTimeTable = () => {
     console.log("here are the things",courseId,year,semester)
     try {
       setLoading(true)
-      const res = await axios.get(`${API_BASE_URL}/timetable/sectionTimeTable/getSpecific?course=${courseId}&year=${year}&semester=${semester}`, {
+      const res = isBlocked ?    (await axios.get(`${API_BASE_URL}/timetable/sectionTime?course=b.tech&year=${year}&semester=${semester}&organisationId=6922030364409005992694db`)):(await axios.get(`${API_BASE_URL}/timetable/sectionTimeTable/getSpecific?course=${courseId}&year=${year}&semester=${semester}`, {
         withCredentials: true,
-      });
+      }));
 
       if (res.data?.data) {
         setSections(Object.values(res.data.data.sections));
@@ -620,6 +626,7 @@ const SectionTimeTable = () => {
                 className="border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:ring-2 focus:ring-blue-500"
                 onChange={handleChange}
                 value="section" // Set to section
+                disabled ={isBlocked}
               >
                 <option value="faculty">Faculty Timetable</option>
                 <option value="section">Section Timetable</option>

@@ -104,7 +104,7 @@ export default function TimetableAccessWidget() {
                 <input
                   value={organisationId}
                   onChange={(e) => setorganisationId(e.target.value)}
-                  placeholder="Organisation Email"
+                  placeholder="OrganisationId"
                   className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-700"
                 />
 

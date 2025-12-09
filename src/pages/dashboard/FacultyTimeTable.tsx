@@ -34,8 +34,8 @@ const {hasOrganisationData,setHasOrganisationData,currentlyViewedTimtable} = use
  
 const {semester,year,courseId} = useParams()
  const location = useLocation();
- const {organisationEmail,isBlocked} = location?.state || {
-  organisationEmail:"",
+ const {organisationId,isBlocked} = location?.state || {
+  organisationId:"",
   isBlocked:false
  }
 console.log("Here are the params",semester,year,courseId)
@@ -89,10 +89,10 @@ const fetchSavedTimetable = async () => {
 
 
    const res = isBlocked ? ( await axios.get(
-      `${API_BASE_URL}/timetable/facultyTime?course=${courseId?.trim().toLowerCase()}&year=${year?.trim().toLowerCase()}&semester=${semester?.trim().toLowerCase()}&organisationEmail=${organisationEmail}`,
+      `${API_BASE_URL}/timetable/facultyTime?course=${courseId?.trim().toLowerCase()}&year=${year?.trim().toLowerCase()}&semester=${semester?.trim().toLowerCase()}&organisationId=${organisationId}`,
       { withCredentials: true }
     )):(  await axios.get(
-      `${API_BASE_URL}/timetable/facultyTimeTable/getSpecific?course=${courseId?.trim().toLowerCase()}&year=${year?.trim().toLowerCase()}&semester=${semester?.trim().toLowerCase()}&organisationEmail=${organisationEmail}`,
+      `${API_BASE_URL}/timetable/facultyTimeTable/getSpecific?course=${courseId?.trim().toLowerCase()}&year=${year?.trim().toLowerCase()}&semester=${semester?.trim().toLowerCase()}`,
       { withCredentials: true }
     ))
 
@@ -724,6 +724,7 @@ const fetchSavedTimetable = async () => {
               <button
                 onClick={handleAllExport}
                 className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 whitespace-nowrap"
+                disabled ={isBlocked}
               >
                 Download All
               </button>
