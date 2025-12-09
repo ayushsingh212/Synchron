@@ -106,7 +106,7 @@ const AssignSenete: React.FC = () => {
       </div>
 
       <div className="p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
-        <h2 className="text-xl font-semibold text-slate-700 mb-4">Assigned Senetes</h2>
+        <h2 className="text-xl font-semibold text-slate-700 mb-4">Assigned HODS</h2>
 
         {senates.length === 0 ? (
           <p className="text-slate-500">No HOD assigned yet.</p>
