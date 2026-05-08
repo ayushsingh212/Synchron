@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 import Modal from "./Modal";
-import { Building2, Mail, Lock, Phone, Image as ImageIcon, Landmark } from "lucide-react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Building2, Mail, Lock, Phone, Image as ImageIcon, Landmark, Eye, EyeOff } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
@@ -180,7 +179,7 @@ const RegisterModal: React.FC<Props> = ({ open, onClose }) => {
             className="absolute right-3 top-3.5 cursor-pointer text-blue-600"
             onClick={() => setShowPassword(!showPassword)}
           >
-            {showPassword ? <FaEyeSlash /> : <FaEye />}
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </span>
         </div>
 

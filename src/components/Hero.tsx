@@ -1,29 +1,10 @@
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
-import { API_BASE_URL } from "../config";
+import { useOrganisation } from "../context/OrganisationContext";
 
 const Hero: React.FC = () => {
-  const [logined, setLogined] = useState(false);
-
-  const checkUserLoggedIn = async () => {
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/organisation/getCurrentOrganisation`,
-        { withCredentials: true }
-      );
-      console.log("User logged in:", res.data);
-      setLogined(true);
-    } catch (error) {
-      console.log("User not logged in:", error);
-      setLogined(false);
-    }
-  };
-
-  useEffect(() => {
-    checkUserLoggedIn();
-  }, []);
+  const { organisation } = useOrganisation();
 
   return (
     <section className="bg-blue-600 text-white py-24 md:py-32">
@@ -40,7 +21,7 @@ const Hero: React.FC = () => {
         </p>
 
         <div className="mt-10 flex items-center justify-center gap-4">
-          {logined ? (
+          {organisation ? (
             <Link
               to="/dashboard/organisation-info"
              className="bg-green-600 text-white font-semibold px-6 py-3 rounded-full shadow hover:bg-green-900 transition"
@@ -54,7 +35,7 @@ const Hero: React.FC = () => {
               }}
              className="bg-green-600 text-white font-semibold px-6 py-3 rounded-full shadow hover:bg-green-900 transition"
             >
-              Get Started Ayush........
+              Get Started
             </button>
           )}
         </div>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { FiCalendar, FiX, FiUser, FiUsers } from "react-icons/fi";
+import { CalendarDays, X, User, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function TimetableAccessWidget() {
@@ -68,7 +68,7 @@ export default function TimetableAccessWidget() {
         onClick={() => setOpen(true)}
         className="bg-blue-600 text-white p-4 rounded-full shadow-xl hover:scale-110 transition-transform"
       >
-        <FiCalendar size={22} />
+        <CalendarDays size={22} />
       </button>
 
       {open && (
@@ -77,7 +77,7 @@ export default function TimetableAccessWidget() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-blue-700">Access Your Timetable</h2>
               <button onClick={closeModal} className="text-gray-600 hover:text-red-500">
-                <FiX size={20} />
+                <X size={20} />
               </button>
             </div>
 
@@ -87,14 +87,14 @@ export default function TimetableAccessWidget() {
                   onClick={() => setMode("faculty")}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium"
                 >
-                  <FiUser size={20} /> Proceed as Faculty
+                  <User size={20} /> Proceed as Faculty
                 </button>
 
                 <button
                   onClick={() => setMode("student")}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium"
                 >
-                  <FiUsers size={20} /> Proceed as Student
+                  <Users size={20} /> Proceed as Student
                 </button>
               </div>
             )}

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from "../../../config"; 
-import { FaCalendarAlt, FaHistory, FaLock, FaUser, FaDownload, FaUniversity, FaTimes, FaLock as LockIcon, FaAngleLeft, FaAngleRight } from 'react-icons/fa'; 
+import { CalendarDays, History, Lock, User, Download, Building2, X as XIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 
 interface TimetableSlot { subject: string; section: string; room: string; type: 'Lecture' | 'Lab' | 'Tutorial'; materialLink?: string; }
@@ -116,7 +116,7 @@ const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ history }) => {
                 <button 
                     onClick={() => changeMonth(-1)} 
                     className="p-2 rounded-full hover:bg-gray-100 transition text-gray-700">
-                    <FaAngleLeft />
+                    <ChevronLeft size={16} />
                 </button>
                 <h4 className="text-2xl font-bold text-gray-800">
                     {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
@@ -124,7 +124,7 @@ const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ history }) => {
                 <button 
                     onClick={() => changeMonth(1)} 
                     className="p-2 rounded-full hover:bg-gray-100 transition text-gray-700">
-                    <FaAngleRight />
+                    <ChevronRight size={16} />
                 </button>
             </div>
 
@@ -299,7 +299,7 @@ const FacultyDashboard: React.FC = () => {
                     <div>
                         {/* ORGANIZATION NAME: BIGGER FONT, BOLD, ACCENT COLOR */}
                         <h2 className="text-base sm:text-lg font-semibold text-blue-600 flex items-center mb-2 tracking-wide">
-                            <FaUniversity className="mr-2 text-xl"/> {mockOrganisationName}
+                            <Building2 className="mr-2" size={20} /> {mockOrganisationName}
                         </h2>
                         
                         {/* FACULTY NAME: VERY LARGE FONT, EXTRA BOLD */}
@@ -321,9 +321,9 @@ const FacultyDashboard: React.FC = () => {
 
             {/* --- Tabs Navigation --- */}
             <div className="flex space-x-1 bg-white p-2 rounded-xl shadow-md mb-8">
-                <button onClick={() => setActiveTab('schedule')} className={`flex items-center space-x-2 px-6 py-2 font-medium rounded-xl transition w-1/3 justify-center ${activeTab === 'schedule' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'}`}><FaCalendarAlt /> <span>My Timetable</span></button>
-                <button onClick={() => setActiveTab('attendance')} className={`flex items-center space-x-2 px-6 py-2 font-medium rounded-xl transition w-1/3 justify-center ${activeTab === 'attendance' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'}`}><FaHistory /> <span>Attendance</span></button>
-                <button onClick={() => setActiveTab('profile')} className={`flex items-center space-x-2 px-6 py-2 font-medium rounded-xl transition w-1/3 justify-center ${activeTab === 'profile' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'}`}><FaUser /> <span>Profile & Security</span></button>
+                <button onClick={() => setActiveTab('schedule')} className={`flex items-center space-x-2 px-6 py-2 font-medium rounded-xl transition w-1/3 justify-center ${activeTab === 'schedule' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'}`}><CalendarDays size={16} /> <span>My Timetable</span></button>
+                <button onClick={() => setActiveTab('attendance')} className={`flex items-center space-x-2 px-6 py-2 font-medium rounded-xl transition w-1/3 justify-center ${activeTab === 'attendance' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'}`}><History size={16} /> <span>Attendance</span></button>
+                <button onClick={() => setActiveTab('profile')} className={`flex items-center space-x-2 px-6 py-2 font-medium rounded-xl transition w-1/3 justify-center ${activeTab === 'profile' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'}`}><User size={16} /> <span>Profile & Security</span></button>
             </div>
             
             <div className="dashboard-content">
@@ -339,7 +339,7 @@ const FacultyDashboard: React.FC = () => {
                                 <div><h3 className="text-lg font-semibold text-gray-700">Download My Schedule</h3><p className="text-sm text-gray-500">Get a printable version.</p></div>
                                 <div className="flex space-x-2">
                                     <select value={exportType} onChange={(e) => setExportType(e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-blue-500"><option value="pdf">PDF</option><option value="excel">Excel</option></select>
-                                    <button onClick={handleSingleExport} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"><FaDownload className="mr-1"/> Export</button>
+                                    <button onClick={handleSingleExport} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"><Download className="mr-1" size={14} /> Export</button>
                                 </div>
                             </div>
                             <div className="bg-white shadow-md rounded-xl p-6 border-l-4 border-purple-500 md:col-span-2">
@@ -352,7 +352,7 @@ const FacultyDashboard: React.FC = () => {
                         <div className="p-4 bg-gray-100 rounded-xl">
                             <h3 className="text-2xl font-semibold text-gray-800 mb-4">Weekly Schedule Overview</h3>
                             <div className="p-3 bg-red-100 text-red-700 rounded-lg mb-4 border border-red-300">
-                                <p className="font-bold text-sm flex items-center"><LockIcon className='mr-2'/> Access Note:</p>
+                                <p className="font-bold text-sm flex items-center"><Lock className='mr-2' size={14} /> Access Note:</p>
                                 <p className="text-xs">This timetable view is **read-only**. Editing and generation features are disabled for this account.</p>
                             </div>
                             
@@ -421,7 +421,7 @@ const FacultyDashboard: React.FC = () => {
                         <button 
                             onClick={() => toast.info("API call to POST /api/faculty/me/leave...")} 
                             className="mt-4 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-semibold flex items-center space-x-2">
-                            <FaCalendarAlt/> <span>Submit New Leave Request</span>
+                            <CalendarDays size={16} /> <span>Submit New Leave Request</span>
                         </button>
                     </div>
                 )}
@@ -442,12 +442,12 @@ const FacultyDashboard: React.FC = () => {
                         {/* Change Password Card */}
                         <div className="bg-white shadow-md rounded-xl p-6 border-l-4 border-red-500">
                             <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center space-x-2">
-                                <FaLock className="text-red-500"/> <span>Security Settings</span>
+                                <Lock className="text-red-500" size={18} /> <span>Security Settings</span>
                             </h3>
                             <button 
                                 onClick={() => setShowPasswordModal(true)} 
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center space-x-2">
-                                <FaLock/> <span>Update Password</span>
+                                <Lock size={14} /> <span>Update Password</span>
                             </button>
                         </div>
                     </div>
@@ -460,7 +460,7 @@ const FacultyDashboard: React.FC = () => {
                     <form onSubmit={handleChangePassword} className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
                         <div className="flex justify-between items-center mb-4 border-b pb-2">
                             <h3 className="text-xl font-bold text-gray-800">Change Password</h3>
-                            <button type="button" onClick={() => setShowPasswordModal(false)} className="text-gray-400 hover:text-gray-600"><FaTimes/></button>
+                            <button type="button" onClick={() => setShowPasswordModal(false)} className="text-gray-400 hover:text-gray-600"><XIcon size={18} /></button>
                         </div>
                         
                         <div className="space-y-4">

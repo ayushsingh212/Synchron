@@ -3,7 +3,7 @@ import HeroCarousel from "../components/HeroCarousel";
 import Tagline from "../components/Tagline";
 import Services from "../components/Services";
 import FeaturesIcons from "../components/FeaturesIcons";
-import Testimonials from "../components/Testimonnials";
+import Testimonials from "../components/Testimonials";
 import LogosCloud from "../components/LogosCloud";
 
 

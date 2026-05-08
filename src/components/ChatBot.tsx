@@ -2,15 +2,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 import {
-  FiMessageSquare,
-  FiMic,
-  FiSend,
-  FiTrash2,
-  FiMaximize,
-  FiMinimize,
-  FiX,
-  FiVolume2,
-} from "react-icons/fi";
+  MessageSquare,
+  Mic,
+  Send,
+  Trash2,
+  Maximize2,
+  Minimize2,
+  X,
+  Volume2,
+} from "lucide-react";
 
 export default function ChatBotWidget() {
   const [open, setOpen] = useState(false);
@@ -240,7 +240,7 @@ export default function ChatBotWidget() {
         className="bg-blue-600 text-white p-4 rounded-full shadow-xl hover:scale-105 transition-transform"
         aria-label="Toggle chat"
       >
-        <FiMessageSquare size={20} />
+        <MessageSquare size={20} />
       </button>
 
       {open && (
@@ -253,7 +253,7 @@ export default function ChatBotWidget() {
         >
           <div className="flex justify-between items-center p-4 bg-blue-600 text-white rounded-t-2xl">
             <div className="flex items-center gap-3">
-              <FiMessageSquare size={22} />
+              <MessageSquare size={22} />
               <div>
                 <span className="font-semibold block">SchedulifyAi Assistant</span>
                 <span className="text-blue-100 text-xs">AI-powered support</span>
@@ -266,13 +266,13 @@ export default function ChatBotWidget() {
                 className="p-2 rounded-md hover:bg-blue-500/20 transition"
                 aria-label="Toggle fullscreen"
               >
-                {full ? <FiMinimize size={16} /> : <FiMaximize size={16} />}
+                {full ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
               <button onClick={clearChat} className="p-2 rounded-md hover:bg-blue-500/20 transition" aria-label="Clear chat">
-                <FiTrash2 size={16} />
+                <Trash2 size={16} />
               </button>
               <button onClick={() => setOpen(false)} className="p-2 rounded-md hover:bg-blue-500/20 transition" aria-label="Close chat">
-                <FiX size={16} />
+                <X size={16} />
               </button>
             </div>
           </div>
@@ -287,7 +287,7 @@ export default function ChatBotWidget() {
               >
                 {msg.sender === "bot" && (
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700">
-                    <FiMessageSquare />
+                    <MessageSquare size={16} />
                   </div>
                 )}
 
@@ -310,7 +310,7 @@ export default function ChatBotWidget() {
                         className="text-xs text-blue-600 hover:underline flex items-center gap-1"
                         aria-label="Speak message"
                       >
-                        <FiVolume2 /> Speak
+                        <Volume2 size={14} /> Speak
                       </button>
                     )}
                   </div>
@@ -330,7 +330,7 @@ export default function ChatBotWidget() {
             {typing && (
               <div className="flex gap-3 items-center">
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700">
-                  <FiMessageSquare />
+                  <MessageSquare size={16} />
                 </div>
                 <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
                   <div className="flex gap-1">
@@ -352,7 +352,7 @@ export default function ChatBotWidget() {
                 className={`p-3 rounded-xl ${listening ? "bg-red-500 text-white animate-pulse" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}`}
                 aria-label="Toggle microphone"
               >
-                <FiMic />
+                <Mic size={18} />
               </button>
 
               <textarea
@@ -377,7 +377,7 @@ export default function ChatBotWidget() {
                 className="bg-blue-600 text-white px-4 py-3 rounded-xl disabled:bg-gray-400 flex items-center gap-2"
                 aria-label="Send message"
               >
-                <FiSend />
+                <Send size={16} />
                 <span className="text-sm">Send</span>
               </button>
             </div>

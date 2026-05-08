@@ -1,11 +1,11 @@
 import React from "react";
-import { FaBolt, FaUsers, FaCalendarAlt, FaBoxes } from "react-icons/fa";
+import { Zap, Users, CalendarDays, Boxes } from "lucide-react";
 
 const ICONS = [
-  { id: "i1", icon: <FaBolt />, title: "Intuitive Options", desc: "Fast setup and clear UX." },
-  { id: "i2", icon: <FaUsers />, title: "Collaboration", desc: "Role based access and sharing." },
-  { id: "i3", icon: <FaCalendarAlt />, title: "Powerful Timetables", desc: "Conflict aware scheduling." },
-  { id: "i4", icon: <FaBoxes />, title: "Manage Resources", desc: "Rooms, labs, and equipment." },
+  { id: "i1", icon: <Zap size={20} />, title: "Intuitive Options", desc: "Fast setup and clear UX." },
+  { id: "i2", icon: <Users size={20} />, title: "Collaboration", desc: "Role based access and sharing." },
+  { id: "i3", icon: <CalendarDays size={20} />, title: "Powerful Timetables", desc: "Conflict aware scheduling." },
+  { id: "i4", icon: <Boxes size={20} />, title: "Manage Resources", desc: "Rooms, labs, and equipment." },
 ];
 
 const FeaturesIcons: React.FC = () => (

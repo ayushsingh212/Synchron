@@ -5,7 +5,7 @@ import { useAppState } from "../../config";
 import { X, Menu } from "lucide-react";
 
 const DashboardLayout: React.FC = () => {
-  const { organisation, logout } = useOrganisation();
+  const { organisation } = useOrganisation();
   const { sidebarOpen, setSidebarOpen } = useAppState();
 
     const location = useLocation();

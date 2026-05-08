@@ -8,7 +8,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = 'http://localhost:5000/api'; // Update with your actual API URL
+import { API_BASE_URL } from '../config';
 
 const AuthorityDashboard = () => {
   const navigate = useNavigate();

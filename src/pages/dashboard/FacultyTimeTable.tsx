@@ -7,7 +7,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ExcelJS from "exceljs";
 import Papa from "papaparse";
 import { API_BASE_URL } from "../../config";
-import { TbRuler } from "react-icons/tb";
+
 import { useOrganisation } from "../../context/OrganisationContext";
 
 const FacultyTimeTable = () => {
@@ -38,7 +38,7 @@ const {semester,year,courseId} = useParams()
   organisationId:"",
   isBlocked:false
  }
-console.log("Here are the params",semester,year,courseId)
+
 // console.log("Here is the currently viewed timetable",currentlyViewedTimtable)
 // console.log("Do i have saved data",hasOrganisationData)  
   const subjectColors = {
