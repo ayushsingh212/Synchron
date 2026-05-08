@@ -67,10 +67,13 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      <header className="w-full bg-gradient-to-r from-blue-50 via-white to-blue-50 text-blue-600 border-b border-blue-200 shadow-sm">
+      <header className="sticky top-0 z-50 w-full glass text-slate-800 transition-all duration-300 border-b border-slate-200/50">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 md:px-12 py-4">
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight">
-            <Link to={"/"}>SchedulifyAI</Link>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-brand-600 font-display">
+            <Link to={"/"} className="flex items-center gap-2">
+              <span className="bg-brand-100 text-brand-600 p-1 rounded-lg"><LayoutDashboard size={20} /></span>
+              SchedulifyAI
+            </Link>
           </h1>
 
           {/* Desktop nav */}
@@ -79,14 +82,14 @@ const Navbar: React.FC = () => {
               <>
                 <button
                   onClick={goToDashboard}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-500 text-white hover:bg-brand-600 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
                 >
                   <LayoutDashboard size={18} />
                   Dashboard
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 rounded-lg text-blue-600 border border-blue-500 hover:bg-blue-50 transition"
+                  className="px-5 py-2.5 rounded-xl text-slate-600 hover:text-red-500 hover:bg-red-50 transition-colors duration-300"
                 >
                   Logout
                 </button>
@@ -95,13 +98,13 @@ const Navbar: React.FC = () => {
               <>
                 <button
                   onClick={() => setShowLogin(true)}
-                  className="px-4 py-2 rounded-lg text-blue-600 border border-blue-500 hover:bg-blue-50 transition"
+                  className="px-5 py-2.5 rounded-xl text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors duration-300"
                 >
                   Login
                 </button>
                 <button
                   onClick={() => setShowRegister(true)}
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                  className="px-5 py-2.5 rounded-xl bg-brand-500 text-white hover:bg-brand-600 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
                 >
                   Register
                 </button>
@@ -112,7 +115,7 @@ const Navbar: React.FC = () => {
           {/* Mobile hamburger button */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-blue-50 transition"
+            className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-brand-50 hover:text-brand-600 transition-colors"
             aria-label="Toggle mobile menu"
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -121,37 +124,37 @@ const Navbar: React.FC = () => {
 
         {/* Mobile drawer */}
         {mobileOpen && (
-          <div className="md:hidden border-t border-blue-200 bg-white animate-in slide-in-from-top">
+          <div className="md:hidden border-t border-slate-100 bg-white/95 backdrop-blur-xl animate-in slide-in-from-top duration-300 shadow-glass">
             <nav className="flex flex-col gap-2 px-6 py-4">
               <Link
                 to="/about"
                 onClick={() => setMobileOpen(false)}
-                className="px-4 py-3 rounded-lg text-blue-600 hover:bg-blue-50 transition font-medium"
+                className="px-4 py-3 rounded-xl text-slate-600 hover:bg-brand-50 hover:text-brand-600 transition font-medium"
               >
                 About
               </Link>
               <Link
                 to="/contact"
                 onClick={() => setMobileOpen(false)}
-                className="px-4 py-3 rounded-lg text-blue-600 hover:bg-blue-50 transition font-medium"
+                className="px-4 py-3 rounded-xl text-slate-600 hover:bg-brand-50 hover:text-brand-600 transition font-medium"
               >
                 Contact
               </Link>
 
-              <div className="border-t border-blue-100 my-2"></div>
+              <div className="border-t border-slate-100 my-2"></div>
 
               {organisation ? (
                 <>
                   <button
                     onClick={goToDashboard}
-                    className="flex items-center gap-2 px-4 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition font-semibold"
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-brand-500 text-white hover:bg-brand-600 transition font-semibold"
                   >
                     <LayoutDashboard size={18} />
                     Dashboard
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 px-4 py-3 rounded-lg text-red-600 border border-red-300 hover:bg-red-50 transition font-semibold"
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition font-semibold"
                   >
                     <LogOut size={18} />
                     Logout
@@ -164,7 +167,7 @@ const Navbar: React.FC = () => {
                       setMobileOpen(false);
                       setShowLogin(true);
                     }}
-                    className="px-4 py-3 rounded-lg text-blue-600 border border-blue-500 hover:bg-blue-50 transition font-semibold text-center"
+                    className="px-4 py-3 rounded-xl text-brand-600 border border-brand-200 hover:bg-brand-50 transition font-semibold text-center"
                   >
                     Login
                   </button>
@@ -173,7 +176,7 @@ const Navbar: React.FC = () => {
                       setMobileOpen(false);
                       setShowRegister(true);
                     }}
-                    className="px-4 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition font-semibold text-center"
+                    className="px-4 py-3 rounded-xl bg-brand-500 text-white hover:bg-brand-600 transition font-semibold text-center"
                   >
                     Register
                   </button>

@@ -2,51 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body,
-#root {
-  height: 100%;
+@layer base {
+  html, body, #root {
+    @apply h-full antialiased text-slate-800 bg-slate-50;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+  }
 }
 
-.hero-gradient {
-  background: linear-gradient(
-    90deg,
-    rgba(245, 247, 255, 1) 0%,
-    rgba(255, 247, 253, 1) 100%
-  );
+@layer components {
+  /* Premium Glassmorphism effects */
+  .glass {
+    @apply bg-white/70 backdrop-blur-lg border border-white/40 shadow-glass;
+  }
+  
+  .glass-dark {
+    @apply bg-slate-900/70 backdrop-blur-lg border border-slate-700/50 shadow-glass;
+  }
+  
+  .glass-panel {
+    @apply bg-white/60 backdrop-blur-xl border border-white/50 shadow-soft rounded-2xl;
+  }
+
+  /* Animated gradient backgrounds */
+  .hero-gradient {
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  }
+
+  .mesh-gradient {
+    background-color: #ffffff;
+    background-image: radial-gradient(at 40% 20%, hsla(250,100%,74%,0.15) 0px, transparent 50%),
+                      radial-gradient(at 80% 0%, hsla(189,100%,56%,0.15) 0px, transparent 50%),
+                      radial-gradient(at 0% 50%, hsla(355,100%,93%,0.1) 0px, transparent 50%);
+  }
+  
+  .card-shadow {
+    @apply shadow-soft;
+  }
 }
 
-.card-shadow {
-  box-shadow: 0 4px 14px rgba(12, 12, 14, 0.06);
+/* Elegant Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-/* *::-webkit-scrollbar {
-  display: none;
-} */
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
 
-/* Hide scrollbar for IE, Edge and Firefox */
-/* * {
-  -ms-overflow-style: none;  
-  scrollbar-width: none;  
-} */
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+}
 
-/* html, body { */
-/* overflow-x: hidden; */
-/* scrollbar-width: none;
-  -ms-overflow-style: none;
-} */
+/* Override default toastify styles to match theme */
+.Toastify__toast {
+  @apply glass-panel !important;
+  border-radius: 1rem !important;
+  font-family: 'Inter', sans-serif !important;
+  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1) !important;
+}
 
-/* html::-webkit-scrollbar,
-body::-webkit-scrollbar {
-  display: none;
-} */
-
-/* .scrollbar-none::-webkit-scrollbar {
-  display: none;
-} */
-
-/* .scrollbar-none {
+.scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;
-} */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
