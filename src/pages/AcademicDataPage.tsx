@@ -343,9 +343,9 @@ const OrganisationDataTaker = () => {
 
   const validateForm = useCallback(() => {
     const newErrors: Record<string, string> = {};
-    if (!formData.college_info.name.trim())
+    if (!formData.college_info.name?.trim())
       newErrors.college_name = "College name is required";
-    if (!formData.college_info.session.trim())
+    if (!formData.college_info.session?.trim())
       newErrors.session = "Session is required";
     if (!formData.college_info.effective_date)
       newErrors.effective_date = "Effective date is required";
