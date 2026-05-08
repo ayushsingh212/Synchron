@@ -226,8 +226,10 @@ const UploadPdf = () => {
       toast.success(
         `${getFileTypeName(file.type)} parsed successfully — verify below.`
       );
-    } catch {
-      toast.error("Failed to parse file.");
+    } catch (error) {
+      console.error("Upload error:", error);
+      const errorMsg = error?.response?.data?.detail || error.message || "Failed to parse file.";
+      toast.error(`Error: ${errorMsg}`);
     } finally {
       setUploading(false);
     }
